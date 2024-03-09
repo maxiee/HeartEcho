@@ -8,7 +8,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingA
 import os
 
 device = "cuda"
-model_dir = "./0.5B-trained"
+model_dir = "./trained"
 
 # ================================================================
 # LLM 模型部分
@@ -19,29 +19,29 @@ if os.path.exists(model_dir):
     model = AutoModelForCausalLM.from_pretrained(model_dir)
 else:
     model = AutoModelForCausalLM.from_pretrained(
-        "Qwen/Qwen1.5-0.5B-Chat", torch_dtype="auto", device_map="auto"
+        "Qwen/Qwen1.5-1.8B-Chat", torch_dtype="auto", device_map="auto"
     )
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-0.5B-Chat")
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-1.8B-Chat")
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
 
 
 def preprocess(messages, tokenizer, max_len):
     print("preprocessing")
+    print(messages)
 
     texts = []
-    for message in messages:
-        # 将对话格式应用于每组消息
-        texts.append(
-            tokenizer.apply_chat_template(
-                message,
-                tokenize=True,
-                add_generation_prompt=False,
-                padding=True,
-                max_length=max_len,
-                truncation=True,
-            )
+    texts.append(
+        tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=False,
+            padding=True,
+            max_length=max_len,
+            truncation=True,
         )
+    )
+
     input_ids = torch.tensor(texts, dtype=torch.long)
     target_ids = input_ids.clone()
     target_ids[target_ids == tokenizer.pad_token_id] = IGNORE_TOKEN_ID
@@ -53,8 +53,8 @@ def preprocess(messages, tokenizer, max_len):
 
 
 class SupervisedDataset(Dataset):
-    def __init__(self, raw_data, tokenizer, max_len):
-        messages = [example["messages"] for example in raw_data]
+
+    def __init__(self, messages, tokenizer, max_len):
         data_dict = preprocess(messages, tokenizer, max_len)
 
         self.input_ids = data_dict["input_ids"]
@@ -132,15 +132,51 @@ class LargeLanguageModel:
         ]
         response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         print(response)
-        return f"{response}"
+        return response
 
     def learn_knowledge(self, knowledge):
-        # 这里应该是你的模型逻辑，现在只是返回一个简单的响应
-        return {"learned": True, "params": {"knowledge": knowledge}}
+        print(f"知识长度 {len(knowledge)}")
+        train_dataset = KnowledgeDataset(knowledge, tokenizer, max_len=1024)
+        # 增量训练模型
+        # 注意：你需要根据你的实际训练环境调整此部分
+        training_args = TrainingArguments(
+            output_dir="./results",  # 输出目录
+            num_train_epochs=1,  # 总训练轮次
+            per_device_train_batch_size=1,  # 每个设备的批大小
+            warmup_steps=0,  # 预热步骤
+            weight_decay=0.01,  # 权重衰减
+            logging_dir="./logs",  # 日志目录
+        )
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,  # 使用新的训练数据
+            # 这里可能还需要一个评估数据集
+        )
+        trainer.train()
+        return "ok"
 
     def learn_chat(self, conversations):
         # 这里应该是你的模型逻辑，现在只是返回一个简单的响应
-        return {"learned": True, "params": {"conversations": len(conversations)}}
+        train_dataset = SupervisedDataset(conversations, tokenizer, 512)
+        # 增量训练模型
+        # 注意：你需要根据你的实际训练环境调整此部分
+        training_args = TrainingArguments(
+            output_dir="./results",  # 输出目录
+            num_train_epochs=1,  # 总训练轮次
+            per_device_train_batch_size=1,  # 每个设备的批大小
+            warmup_steps=0,  # 预热步骤
+            weight_decay=0.01,  # 权重衰减
+            logging_dir="./logs",  # 日志目录
+        )
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,  # 使用新的训练数据
+            # 这里可能还需要一个评估数据集
+        )
+        trainer.train()
+        return "ok"
 
 
 # 实例化模型
@@ -154,7 +190,7 @@ def chat(chat_input: ChatInput):
 
 @app.post("/learn_knowledge")
 def learn_knowledge(knowledge_input: KnowledgeInput):
-    return api_model.learn_knowledge(knowledge_input.knowledge)
+    return {"response": api_model.learn_knowledge(knowledge_input.knowledge)}
 
 
 @app.post("/learn_chat")

@@ -1,6 +1,8 @@
 import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
+import 'package:app/pages/learn/learn_chat_page.dart';
+import 'package:app/pages/learn/learn_knowledge_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -60,6 +62,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final globalProvider = Provider.of<GlobalProvider>(context);
     final currentMode = globalProvider.mode;
     if (currentMode == Mode.Chat) return ChatPage();
+    if (currentMode == Mode.LearnKnowledge) return LearnKnowledgePage();
+    if (currentMode == Mode.LearnChat) return LearnChatPage();
     return Placeholder();
   }
 }

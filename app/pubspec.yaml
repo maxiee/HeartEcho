@@ -35,6 +35,7 @@ dependencies:
   provider: any
   flutter_chat_ui: ^1.6.12
   http: ^1.2.1
+  code_text_field: ^1.1.0
 
 dev_dependencies:
   flutter_test:
