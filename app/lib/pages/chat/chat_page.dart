@@ -1,4 +1,5 @@
 import 'package:app/api/api.dart';
+import 'package:app/models/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
@@ -12,6 +13,8 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final List<types.TextMessage> _messages = [];
+  final ChatSession chatSession = ChatSession([]);
+
   final _user = const types.User(id: 'user');
   final _system = const types.User(id: 'system');
   final _assistant = const types.User(id: 'assistant');
@@ -21,6 +24,8 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     currentTimeStamp = DateTime.now().millisecondsSinceEpoch.toString();
+
+    chatSession.addMessage(ChatMessage(role: 'system', content: '你是一个有用的助手。'));
     _messages.add(types.TextMessage(
         author: _system,
         createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -36,15 +41,14 @@ class _ChatPageState extends State<ChatPage> {
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: "切换到学习模式",
-            onPressed: () {
-            },
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.save),
             tooltip: "保存对话",
-            onPressed: () {
-            },
-          )],
+            onPressed: () {},
+          )
+        ],
       ),
       body: Chat(
         messages: _messages,
@@ -57,6 +61,7 @@ class _ChatPageState extends State<ChatPage> {
   void _addMessage(types.TextMessage message) {
     setState(() {
       _messages.insert(0, message);
+      chatSession.addMessage(ChatMessage(role: 'user', content: message.text));
     });
   }
 
@@ -69,24 +74,14 @@ class _ChatPageState extends State<ChatPage> {
     );
 
     _addMessage(textMessage);
-    API.chat(messagesToHistory()).then((response) {
+    API.chat(chatSession.toHistory()).then((response) {
       _addMessage(types.TextMessage(
           author: _assistant,
           createdAt: DateTime.now().millisecondsSinceEpoch,
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           text: response));
+      chatSession.addMessage(
+          ChatMessage(role: 'assistant', content: response));
     });
-  }
-
-  List<Map<String, String>> messagesToHistory() {
-    return _messages.map((e) {
-      if (e.author.id == _system.id) {
-        return {'role': 'system', 'content': e.text};
-      }
-      if (e.author.id == _user.id) {
-        return {'role': 'user', 'content': e.text};
-      }
-      return {'role': 'assistant', 'content': e.text};
-    }).toList().reversed.toList();
   }
 }

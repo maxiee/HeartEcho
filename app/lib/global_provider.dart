@@ -7,6 +7,7 @@ enum Mode {
   Chat,
   LearnKnowledge,
   LearnChat,
+  Corpus,
 }
 
 class GlobalProvider extends ChangeNotifier {

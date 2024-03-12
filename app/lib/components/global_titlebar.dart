@@ -56,6 +56,16 @@ class GlobalTitlebar extends StatelessWidget {
                           color: currentMode == Mode.LearnChat
                               ? Colors.blue
                               : Colors.black))),
+              TextButton(
+                  onPressed: () {
+                    if (currentMode == Mode.Corpus) return;
+                    globalProvider.changeMode(Mode.Corpus);
+                  },
+                  child: Text('语料库',
+                      style: TextStyle(
+                          color: currentMode == Mode.Corpus
+                              ? Colors.blue
+                              : Colors.black))),
             ]),
           ),
           Align(
