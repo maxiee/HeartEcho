@@ -1,5 +1,7 @@
 import 'package:app/api/api.dart';
+import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class LearnChatPage extends StatefulWidget {
   const LearnChatPage({super.key});
@@ -12,7 +14,7 @@ class _LearnChatPageState extends State<LearnChatPage> {
   String systemPromot = '你是一个有用的助手。';
   TextEditingController promptController = TextEditingController();
   TextEditingController questionController = TextEditingController();
-  TextEditingController answerController = TextEditingController();
+  CodeController answerController = CodeController();
 
   @override
   void initState() {
@@ -42,8 +44,12 @@ class _LearnChatPageState extends State<LearnChatPage> {
               controller: questionController,
             ),
             Text('回答：'),
-            TextField(
-              controller: answerController,
+            Expanded(
+              child: CodeField(
+                controller: answerController,
+                expands: true,
+                wrap: true,
+                textStyle: TextStyle(fontFamily: 'SourceCode')),
             ),
           ],
         ),
