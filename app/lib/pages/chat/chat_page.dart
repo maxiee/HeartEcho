@@ -15,10 +15,12 @@ class _ChatPageState extends State<ChatPage> {
   final _user = const types.User(id: 'user');
   final _system = const types.User(id: 'system');
   final _assistant = const types.User(id: 'assistant');
+  late String currentTimeStamp;
 
   @override
   void initState() {
     super.initState();
+    currentTimeStamp = DateTime.now().millisecondsSinceEpoch.toString();
     _messages.add(types.TextMessage(
         author: _system,
         createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -29,6 +31,21 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: "切换到学习模式",
+            onPressed: () {
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            tooltip: "保存对话",
+            onPressed: () {
+            },
+          )],
+      ),
       body: Chat(
         messages: _messages,
         onSendPressed: _handleSendPressed,
