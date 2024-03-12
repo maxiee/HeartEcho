@@ -23,29 +23,44 @@ else:
     )
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-1.8B-Chat")
 
-IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
+# if os.path.exists(model_dir):
+#     model = AutoModelForCausalLM.from_pretrained(model_dir)
+# else:
+#     model = AutoModelForCausalLM.from_pretrained(
+#         "Qwen/Qwen1.5-0.5B-Chat", torch_dtype="auto", device_map="auto"
+#     )
+# tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-0.5B-Chat")
 
+IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
 
 def preprocess(messages, tokenizer, max_len):
     print("preprocessing")
     print(messages)
 
-    texts = []
-    texts.append(
-        tokenizer.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=False,
-            padding=True,
-            max_length=max_len,
-            truncation=True,
-        )
+    message_with_prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=False,
+        padding=True,
+        max_length=max_len,
+        truncation=True,
+    )
+    message_with_prompt = message_with_prompt + "<|im_end|>"
+
+    print(message_with_prompt)
+
+    texts = tokenizer(
+        message_with_prompt,
+        padding=True,
+        truncation=True,
+        return_tensors="pt",
+        max_length=max_len,
     )
 
-    input_ids = torch.tensor(texts, dtype=torch.long)
+    input_ids = texts.input_ids
     target_ids = input_ids.clone()
     target_ids[target_ids == tokenizer.pad_token_id] = IGNORE_TOKEN_ID
-    attention_mask = input_ids.ne(tokenizer.pad_token_id)
+    attention_mask = texts.attention_mask
 
     return dict(
         input_ids=input_ids, target_ids=target_ids, attention_mask=attention_mask
@@ -124,8 +139,8 @@ class LargeLanguageModel:
         text = tokenizer.apply_chat_template(
             history, tokenize=False, add_generation_prompt=True
         )
-        model_inputs = tokenizer([text], return_tensors="pt").to(device)
-        generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=512)
+        model_inputs = tokenizer(text, return_tensors="pt").to(device)
+        generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=1024)
         generated_ids = [
             output_ids[len(input_ids) :]
             for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -146,6 +161,7 @@ class LargeLanguageModel:
             warmup_steps=0,  # 预热步骤
             weight_decay=0.01,  # 权重衰减
             logging_dir="./logs",  # 日志目录
+            learning_rate=2e-5,
         )
         trainer = Trainer(
             model=model,
@@ -158,7 +174,7 @@ class LargeLanguageModel:
 
     def learn_chat(self, conversations):
         # 这里应该是你的模型逻辑，现在只是返回一个简单的响应
-        train_dataset = SupervisedDataset(conversations, tokenizer, 512)
+        train_dataset = SupervisedDataset(conversations, tokenizer, 1024)
         # 增量训练模型
         # 注意：你需要根据你的实际训练环境调整此部分
         training_args = TrainingArguments(
@@ -168,6 +184,7 @@ class LargeLanguageModel:
             warmup_steps=0,  # 预热步骤
             weight_decay=0.01,  # 权重衰减
             logging_dir="./logs",  # 日志目录
+            learning_rate=2e-5,
         )
         trainer = Trainer(
             model=model,
