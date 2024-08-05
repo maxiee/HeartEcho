@@ -1,3 +1,4 @@
+import 'package:app/models/chat.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -19,29 +20,20 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> learnKnowledge(String knowledge) async {
+  Future<String> learn(
+      List<ChatSession> chatSessions, List<String> knowledges) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/learn_knowledge'),
+      Uri.parse('$baseUrl/learn'),
       headers: {'Content-Type': 'application/json', 'charset': 'utf-8'},
-      body: jsonEncode({'knowledge': knowledge}),
+      body: jsonEncode({
+        'chat': chatSessions.map((e) => e.toHistory()).toList(),
+        'knowledge': knowledges,
+      }),
     );
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      return json.decode(utf8.decode(response.bodyBytes))['response'];
     } else {
-      throw Exception('Failed to learn knowledge');
-    }
-  }
-
-  Future<Map<String, dynamic>> learnChat(List<Map<String, dynamic>> conversations) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/learn_chat'),
-      headers: {'Content-Type': 'application/json', 'charset': 'utf-8'},
-      body: jsonEncode({'conversations': conversations}),
-    );
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to learn chat');
+      throw Exception('Failed to learn');
     }
   }
 

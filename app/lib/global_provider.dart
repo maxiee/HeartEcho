@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 enum Mode {
   Chat,
+  Batch,
   LearnKnowledge,
   LearnChat,
   Corpus,

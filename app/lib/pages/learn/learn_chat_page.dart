@@ -1,7 +1,10 @@
 import 'package:app/api/api.dart';
+import 'package:app/models/chat.dart';
+import 'package:app/providers/batch_provider.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 class LearnChatPage extends StatefulWidget {
   const LearnChatPage({super.key});
@@ -15,6 +18,7 @@ class _LearnChatPageState extends State<LearnChatPage> {
   TextEditingController promptController = TextEditingController();
   TextEditingController questionController = TextEditingController();
   CodeController answerController = CodeController();
+  ChatSession chatSession = ChatSession([]);
 
   @override
   void initState() {
@@ -58,28 +62,12 @@ class _LearnChatPageState extends State<LearnChatPage> {
             if (promptController.text.isEmpty ||
                 questionController.text.isEmpty ||
                 answerController.text.isEmpty) return;
-            final data = [
-              {
-                "role": "system",
-                "content": promptController.text,
-              },
-              {
-                "role": "user",
-                "content": questionController.text,
-              },
-              {
-                "role": "assistant",
-                "content": answerController.text,
-              }
-            ];
-            print(data);
-            // chatml
-            API.learnChat(data).then((response) {
-              setState(() {
-                questionController.clear();
-                answerController.clear();
-              });
-            });
+            final data = ChatSession([
+              ChatMessage(role: 'system', content: promptController.text),
+              ChatMessage(role: 'user', content: questionController.text),
+              ChatMessage(role: 'assistant', content: answerController.text)
+            ]);
+            Provider.of<BatchProvider>(context, listen: false).addChatSession(data);
           },
           child: Text('学', style: TextStyle(fontWeight: FontWeight.bold)),
         ));

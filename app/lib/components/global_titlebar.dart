@@ -38,6 +38,16 @@ class GlobalTitlebar extends StatelessWidget {
                               : Colors.black))),
               TextButton(
                   onPressed: () {
+                    if (currentMode == Mode.Batch) return;
+                    globalProvider.changeMode(Mode.Batch);
+                  },
+                  child: Text('待训练池',
+                      style: TextStyle(
+                          color: currentMode == Mode.Batch
+                              ? Colors.blue
+                              : Colors.black))),
+              TextButton(
+                  onPressed: () {
                     if (currentMode == Mode.LearnKnowledge) return;
                     globalProvider.changeMode(Mode.LearnKnowledge);
                   },

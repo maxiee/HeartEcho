@@ -1,6 +1,9 @@
 import 'package:app/api/api.dart';
+import 'package:app/global_provider.dart';
+import 'package:app/providers/batch_provider.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LearnKnowledgePage extends StatefulWidget {
   const LearnKnowledgePage({super.key});
@@ -37,11 +40,8 @@ class _LearnKnowledgePageState extends State<LearnKnowledgePage> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             if (_codeController.text.isEmpty) return;
-            API.learnKnowledge(_codeController.text).then((response) {
-              setState(() {
-                _codeController.clear();
-              });
-            });
+            Provider.of<BatchProvider>(context, listen: false)
+                .addKnowledge(_codeController.text);
           },
           child: Text('学', style: TextStyle(fontWeight: FontWeight.bold)),
         ));
