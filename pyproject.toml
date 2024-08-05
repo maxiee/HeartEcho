@@ -12,6 +12,9 @@ fastapi = "^0.112.0"
 pydantic = "^2.8.2"
 transformers = "^4.43.4"
 networkx = "^3.3"
+torch = {version = "^2.4.0", extras = ["cudatoolkit=12.4"]}
+accelerate = "^0.33.0"
+uvicorn = "^0.30.5"
 
 
 [build-system]
