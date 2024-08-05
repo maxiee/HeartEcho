@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "heartecho"
+version = "0.1.0"
+description = ""
+authors = ["Maxiee <maxieewong@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.112.0"
+pydantic = "^2.8.2"
+transformers = "^4.43.4"
+networkx = "^3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
