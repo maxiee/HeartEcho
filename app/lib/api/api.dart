@@ -184,6 +184,18 @@ class ApiClient {
       throw Exception('Failed to load error distribution');
     }
   }
+
+  Future<int> getNewCorpusEntriesCount(String sessionName) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/new_corpus_entries_count?session=$sessionName'),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['new_entries_count'];
+    } else {
+      throw Exception('Failed to load new corpus entries count');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

@@ -48,6 +48,7 @@ class LLMManager:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def load_model(self, model_path):
+        print(f"Loading model from {model_path}")
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path, torch_dtype="auto", device_map="auto"
         )

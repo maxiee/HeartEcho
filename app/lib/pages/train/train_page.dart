@@ -1,4 +1,5 @@
 import 'package:app/pages/train/components/error_distribution_chart.dart';
+import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/api/api.dart';
@@ -27,6 +28,21 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   void initState() {
     super.initState();
     _loadSavedModels();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  void _loadData() {
+    final sessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context, listen: false);
+
+    if (sessionProvider.isSessionActive) {
+      newCorpusEntriesProvider
+          .fetchNewCorpusEntriesCount(sessionProvider.currentSessionName!);
+    }
   }
 
   Future<void> _loadSavedModels() async {
@@ -56,6 +72,8 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   Widget build(BuildContext context) {
     final globalSessionProvider =
         Provider.of<GlobalTrainingSessionProvider>(context);
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,6 +106,10 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                       ErrorDistributionChart(
                           sessionName:
                               globalSessionProvider.currentSessionName!),
+                      newCorpusEntriesProvider.isLoading
+                          ? CircularProgressIndicator()
+                          : Text(
+                              'New corpus entries: ${newCorpusEntriesProvider.count}'),
                       const SizedBox(height: 20),
                     ] else ...[
                       ElevatedButton(

@@ -78,6 +78,31 @@ class CorpusEntryInput(BaseModel):
         }
 
 
+@app.middleware("http")
+async def log_responses(request: Request, call_next):
+    print("---")
+    print(f"start Endpoint: {request.url.path}")
+
+    response = await call_next(request)
+
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+
+    # Reconstruct the response
+    response = JSONResponse(
+        content=json.loads(response_body),
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
+
+    print(f"Endpoint: {request.url.path}")
+    print(f"Response: {response_body.decode()}")
+    print("---")
+
+    return response
+
+
 @app.post("/chat")
 def chat(chat_input: ChatInput):
     try:
@@ -183,31 +208,6 @@ async def get_corpus_entries(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@app.middleware("http")
-async def log_responses(request: Request, call_next):
-    print("---")
-    print(f"start Endpoint: {request.url.path}")
-
-    response = await call_next(request)
-
-    response_body = b""
-    async for chunk in response.body_iterator:
-        response_body += chunk
-
-    # Reconstruct the response
-    response = JSONResponse(
-        content=json.loads(response_body),
-        status_code=response.status_code,
-        headers=dict(response.headers),
-    )
-
-    print(f"Endpoint: {request.url.path}")
-    print(f"Response: {response_body.decode()}")
-    print("---")
-
-    return response
-
-
 @app.get("/saved_models")
 async def get_saved_models():
     try:
@@ -241,17 +241,22 @@ async def create_training_session():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class LoadModelInput(BaseModel):
+    model_name: str
+
+
 @app.post("/load_model")
-async def load_model(model_name: str):
+async def load_model(input: LoadModelInput):
     try:
-        model_path = os.path.join(settings.model_dir, model_name)
+        model_path = os.path.join(settings.model_dir, input.model_name)
+        print(f"Loading model from {model_path}")
         if not os.path.exists(model_path):
             raise HTTPException(status_code=404, detail="Model not found")
 
         # Load the specified model
         llm_manager.load_model(model_path)
 
-        return {"message": f"Model {model_name} loaded successfully"}
+        return {"message": f"Model {input.model_name} loaded successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -281,6 +286,19 @@ async def get_error_distribution(
         )
 
     return {"distribution": data}
+
+
+@app.get("/new_corpus_entries_count")
+async def get_new_corpus_entries_count(
+    session: str = Query(..., description="Training session name")
+):
+    try:
+        total_corpus_entries = CorpusEntry.objects.count()
+        trained_entries_count = TrainingError.objects(session=session).count()
+        new_entries_count = total_corpus_entries - trained_entries_count
+        return {"new_entries_count": max(0, new_entries_count)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

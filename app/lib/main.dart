@@ -2,6 +2,7 @@ import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
 import 'package:app/pages/corpus/corpus_management_page.dart';
+import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:app/pages/train/train_page.dart';
 import 'package:app/providers/batch_provider.dart';
 import 'package:app/providers/global_training_session_provider.dart';
@@ -14,6 +15,7 @@ void main() {
     ChangeNotifierProvider(create: (context) => BatchProvider()),
     ChangeNotifierProvider(
         create: (context) => GlobalTrainingSessionProvider()),
+    ChangeNotifierProvider(create: (context) => NewCorpusEntriesProvider()),
   ], child: const MyApp()));
 }
 
