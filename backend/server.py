@@ -117,7 +117,7 @@ class CorpusInput(BaseModel):
 
 class CorpusEntryInput(BaseModel):
     content: str
-    corpus_entry_type: str
+    entry_type: str
     corpus_name: str
 
 
@@ -231,7 +231,7 @@ async def create_corpus_entry(corpus_entry_input: CorpusEntryInput):
 
         corpus_entry = CorpusEntry(
             content=corpus_entry_input.content,
-            corpus_entry_type=corpus_entry_input.corpus_entry_type,
+            entry_type=corpus_entry_input.entry_type,
             corpus=corpus,
         )
         corpus_entry.save()

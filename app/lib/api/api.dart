@@ -48,6 +48,27 @@ class ApiClient {
       throw Exception('Failed to save model');
     }
   }
+
+  Future<List<dynamic>?> fetchCorpora() async {
+    final response = await http.get(Uri.parse('http://localhost:1127/corpus'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data =
+          json.decode(json.decode(response.body)['corpora']);
+      return data;
+    }
+    return null;
+  }
+
+  Future<List<dynamic>?> fetchCorpusEntries(String corpusId) async {
+    final response = await http.get(
+        Uri.parse('http://localhost:1127/corpus/$corpusId/corpus_entries'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body)['entries'];
+      return data;
+    }
+    return null;
+  }
 }
 
+// ignore: non_constant_identifier_names
 final API = ApiClient();

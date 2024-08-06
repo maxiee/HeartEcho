@@ -42,22 +42,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final globalProvider = Provider.of<GlobalProvider>(context);
-    final currentMode = globalProvider.mode;
     return Scaffold(
         body: Column(
       children: [
-        GlobalTitlebar(),
+        const GlobalTitlebar(),
         Expanded(child: getPage(context)),
       ],
     ));
@@ -66,11 +56,11 @@ class _MyHomePageState extends State<MyHomePage> {
   getPage(BuildContext context) {
     final globalProvider = Provider.of<GlobalProvider>(context);
     final currentMode = globalProvider.mode;
-    if (currentMode == Mode.Chat) return ChatPage();
-    if (currentMode == Mode.Batch) return LearnBatchPage();
-    if (currentMode == Mode.LearnKnowledge) return LearnKnowledgePage();
-    if (currentMode == Mode.LearnChat) return LearnChatPage();
-    if (currentMode == Mode.Corpus) return CorpusManagementPage();
-    return Placeholder();
+    if (currentMode == Mode.Chat) return const ChatPage();
+    if (currentMode == Mode.Batch) return const LearnBatchPage();
+    if (currentMode == Mode.LearnKnowledge) return const LearnKnowledgePage();
+    if (currentMode == Mode.LearnChat) return const LearnChatPage();
+    if (currentMode == Mode.Corpus) return const CorpusManagementPage();
+    return const Placeholder();
   }
 }

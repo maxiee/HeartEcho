@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -28,7 +30,7 @@ class GlobalProvider extends ChangeNotifier {
       if (!corpusDirectory.existsSync()) {
         corpusDirectory.createSync();
       }
-    });    
+    });
   }
 
   Mode get mode => _mode;

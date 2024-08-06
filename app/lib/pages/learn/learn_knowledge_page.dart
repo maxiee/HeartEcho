@@ -1,12 +1,13 @@
-import 'package:app/api/api.dart';
-import 'package:app/global_provider.dart';
+import 'package:app/models/corpus.dart';
 import 'package:app/providers/batch_provider.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class LearnKnowledgePage extends StatefulWidget {
-  const LearnKnowledgePage({super.key});
+  const LearnKnowledgePage({super.key, this.entry});
+
+  final CorpusEntry? entry;
 
   @override
   State<LearnKnowledgePage> createState() => _LearnKnowledgePageState();
@@ -36,14 +37,14 @@ class _LearnKnowledgePageState extends State<LearnKnowledgePage> {
             controller: _codeController,
             expands: true,
             wrap: true,
-            textStyle: TextStyle(fontFamily: 'SourceCode')),
+            textStyle: const TextStyle(fontFamily: 'SourceCode')),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             if (_codeController.text.isEmpty) return;
             Provider.of<BatchProvider>(context, listen: false)
                 .addKnowledge(_codeController.text);
           },
-          child: Text('学', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('学', style: TextStyle(fontWeight: FontWeight.bold)),
         ));
   }
 }

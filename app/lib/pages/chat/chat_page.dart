@@ -2,6 +2,7 @@ import 'package:app/api/api.dart';
 import 'package:app/models/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+// ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class ChatPage extends StatefulWidget {
@@ -80,8 +81,7 @@ class _ChatPageState extends State<ChatPage> {
           createdAt: DateTime.now().millisecondsSinceEpoch,
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           text: response));
-      chatSession.addMessage(
-          ChatMessage(role: 'assistant', content: response));
+      chatSession.addMessage(ChatMessage(role: 'assistant', content: response));
     });
   }
 }

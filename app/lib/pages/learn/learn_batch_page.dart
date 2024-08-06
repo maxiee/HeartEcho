@@ -49,7 +49,7 @@ class _LearnBatchPageState extends State<LearnBatchPage> {
         onPressed: () {
           Provider.of<BatchProvider>(context, listen: false).train();
         },
-        child: Text('学'),
+        child: const Text('学'),
       ),
     );
   }
