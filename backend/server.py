@@ -8,34 +8,33 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingA
 from transformers import DataCollatorWithPadding
 import os
 
+from database import init_db
+from config import settings
+from models.corpus import Corpus
+from models.corpus_entry import CorpusEntry
+
 device = "cuda"
-model_dir = "./trained"
+
+# Initialize database connection
+init_db()
 
 # ================================================================
 # LLM 模型部分
 # ================================================================
 
-model_name = "Qwen/Qwen2-7B-Instruct"
-tokenizer_name = "Qwen/Qwen2-7B-Instruct"
-
-# model_name = "Qwen/Qwen1.5-0.5B-Chat"
-# tokenizer_name = "Qwen/Qwen1.5-0.5B-Chat"
-
-IGNORE_TOKEN_ID = LabelSmoother.ignore_index
+IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
 
 TEMPLATE = "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' }}{% endif %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
 
 
 # 加载模型和分词器
-if os.path.exists(model_dir):
-    model = AutoModelForCausalLM.from_pretrained(model_dir)
+if os.path.exists(settings.model_dir):
+    model = AutoModelForCausalLM.from_pretrained(settings.model_dir)
 else:
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype="auto", device_map="auto"
+        settings.model_name, torch_dtype="auto", device_map="auto"
     )
-tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-
-IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
+tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
 
 
 def preprocess_chat(messages, tokenizer, max_len):
@@ -109,6 +108,17 @@ class ChatInput(BaseModel):
 class LearnInput(BaseModel):
     chat: List[List[Dict[str, Any]]]
     knowledge: List[str]
+
+
+class CorpusInput(BaseModel):
+    name: str
+    description: str = ""
+
+
+class CorpusEntryInput(BaseModel):
+    content: str
+    corpus_entry_type: str
+    corpus_name: str
 
 
 # 定义模拟的大语言模型
@@ -201,6 +211,68 @@ def save_model():
     # 这里应该是你的模型保存逻辑，现在只是返回一个简单的响应
     return {"saved": True}
 
+
+@app.post("/corpus")
+async def create_corpus(corpus_input: CorpusInput):
+    try:
+        corpus = Corpus(name=corpus_input.name, description=corpus_input.description)
+        corpus.save()
+        return {"message": "Corpus created successfully", "id": str(corpus.id)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/corpus_entry")
+async def create_corpus_entry(corpus_entry_input: CorpusEntryInput):
+    try:
+        corpus = Corpus.objects(name=corpus_entry_input.corpus_name).first()
+        if not corpus:
+            raise HTTPException(status_code=404, detail="Corpus not found")
+
+        corpus_entry = CorpusEntry(
+            content=corpus_entry_input.content,
+            corpus_entry_type=corpus_entry_input.corpus_entry_type,
+            corpus=corpus,
+        )
+        corpus_entry.save()
+
+        corpus.update_timestamp()
+
+        return {
+            "message": "corpus_entry created successfully",
+            "id": str(corpus_entry.id),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/corpus")
+async def get_corpora():
+    corpora = Corpus.objects().to_json()
+    return {"corpora": corpora}
+
+
+@app.get("/corpus/{corpus_id}/corpus_entries")
+async def get_corpus_entries(corpus_id: str, skip: int = 0, limit: int = 100):
+    corpus = Corpus.objects(id=corpus_id).first()
+    if not corpus:
+        raise HTTPException(status_code=404, detail="Corpus not found")
+
+    total_count = CorpusEntry.objects(corpus=corpus).count()
+    entries = CorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
+
+    return {
+        "total": total_count,
+        "entries": entries.to_json(),
+        "skip": skip,
+        "limit": limit,
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=1127)
 
 # how to run the server
 # set port to 1127

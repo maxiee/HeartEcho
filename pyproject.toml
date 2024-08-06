@@ -15,6 +15,7 @@ networkx = "^3.3"
 torch = {version = "^2.4.0", extras = ["cudatoolkit=12.4"]}
 accelerate = "^0.33.0"
 uvicorn = "^0.30.5"
+mongoengine = "^0.28.2"
 
 
 [build-system]
