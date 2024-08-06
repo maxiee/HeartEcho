@@ -1,45 +1,135 @@
-import 'dart:convert';
-
 import 'package:app/api/api.dart';
 import 'package:app/models/corpus.dart';
 import 'package:app/pages/learn/learn_chat_page.dart';
 import 'package:app/pages/learn/learn_knowledge_page.dart';
 import 'package:flutter/material.dart';
 
-class CorpusManagementPage extends StatelessWidget {
+class CorpusManagementPage extends StatefulWidget {
   const CorpusManagementPage({super.key});
+
+  @override
+  State<CorpusManagementPage> createState() => _CorpusManagementPageState();
+}
+
+class _CorpusManagementPageState extends State<CorpusManagementPage> {
+  List<Corpus> corpora = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCorpora();
+  }
+
+  Future<void> _fetchCorpora() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final corporaData = await API.fetchCorpora();
+      setState(() {
+        corpora = corporaData.map((data) => Corpus.fromJson(data)).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching corpora: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Corpus Management')),
-      body: FutureBuilder(
-        future: API.fetchCorpora(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          }
-          final corporaData = snapshot.data as List<dynamic>;
-          final corpora =
-              corporaData.map((data) => Corpus.fromJson(data)).toList();
-          return ListView.builder(
-            itemCount: corpora.length,
-            itemBuilder: (context, index) {
-              final corpus = corpora[index];
-              return ListTile(
-                title: Text(corpus.name),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CorpusDetailPage(corpus: corpus),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        title: const Text('Corpus Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddCorpusDialog(context),
+          ),
+        ],
       ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: corpora.length,
+              itemBuilder: (context, index) {
+                final corpus = corpora[index];
+                return ListTile(
+                  title: Text(corpus.name),
+                  subtitle: Text(corpus.description),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CorpusDetailPage(corpus: corpus),
+                    ),
+                  ).then((_) =>
+                      _fetchCorpora()), // Refresh after returning from detail page
+                );
+              },
+            ),
     );
+  }
+
+  void _showAddCorpusDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Corpus'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Corpus Name'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Add'),
+              onPressed: () => _addCorpus(
+                  context, nameController.text, descriptionController.text),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addCorpus(BuildContext context, String name, String description) async {
+    try {
+      await API.createCorpus(name: name, description: description);
+      Navigator.of(context).pop(); // Close the dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Corpus created successfully')),
+      );
+      // Refresh the page
+      _fetchCorpora();
+    } catch (e) {
+      Navigator.of(context).pop(); // Close the dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating corpus: $e')),
+      );
+    }
   }
 }
 
