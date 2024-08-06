@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
 import torch
 from torch.utils.data import Dataset
 from transformers.trainer_pt_utils import LabelSmoother
@@ -61,36 +61,34 @@ class HeartEchoDataset(Dataset):
         tokenizer,
         max_len,
     ):
-        print(max_len)
-        str_list = []
+        self.examples = []
 
         for chat in chats:
-            str_list.append(preprocess_chat(chat, tokenizer, max_len))
+            chat_text = tokenizer.apply_chat_template(
+                chat.messages, tokenize=False, add_generation_prompt=False
+            )
+            self.examples.append(chat_text)
 
         for knowledge in knowledges:
-            str_list.append(knowledge)
+            self.examples.append(knowledge.content)
 
         self.examples = tokenizer(
-            str_list,
+            self.examples,
             padding=True,
             truncation=True,
+            padding="max_length",
             return_tensors="pt",
             max_length=max_len,
         )
-
-        self.input_ids = self.examples.input_ids
-        self.target_ids = self.input_ids.clone()
-        self.target_ids[self.target_ids == tokenizer.pad_token_id] = IGNORE_TOKEN_ID
-        self.attention_mask = self.examples.attention_mask
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
         return {
-            "input_ids": self.input_ids[i],
-            "attention_mask": self.attention_mask[i],
-            "labels": self.target_ids[i],
+            "input_ids": self.encodings.input_ids[i],
+            "attention_mask": self.encodings.attention_mask[i],
+            "labels": self.encodings.input_ids[i].clone(),
         }
 
 
@@ -115,10 +113,42 @@ class CorpusInput(BaseModel):
     description: str = ""
 
 
+class MessageInput(BaseModel):
+    role: str = Field(
+        ...,
+        description="The role of the message sender (e.g., 'user', 'assistant', 'system')",
+    )
+    content: str = Field(..., description="The content of the message")
+
+
 class CorpusEntryInput(BaseModel):
-    content: str
-    entry_type: str
-    corpus_name: str
+    corpus_name: str = Field(
+        ..., description="The name of the corpus this entry belongs to"
+    )
+    entry_type: str = Field(
+        ..., description="The type of the entry: 'chat' or 'knowledge'"
+    )
+    content: Optional[str] = Field(
+        None, description="The content for 'knowledge' type entries"
+    )
+    messages: Optional[List[MessageInput]] = Field(
+        None, description="The list of messages for 'chat' type entries"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "corpus_name": "my_corpus",
+                "entry_type": "chat",
+                "messages": [
+                    {"role": "user", "content": "Hello, how are you?"},
+                    {
+                        "role": "assistant",
+                        "content": "I'm doing well, thank you for asking. How can I assist you today?",
+                    },
+                ],
+            }
+        }
 
 
 # 定义模拟的大语言模型
@@ -142,8 +172,13 @@ class LargeLanguageModel:
         print(response)
         return response
 
-    def learn(self, chat, knowledge):
-        train_dataset = HeartEchoDataset(chat, knowledge, tokenizer, 1024)
+    def learn(self, chat_entries, knowledge_entries):
+        chats = [entry for entry in chat_entries if entry.entry_type == "chat"]
+        knowledges = [
+            entry for entry in knowledge_entries if entry.entry_type == "knowledge"
+        ]
+        train_dataset = HeartEchoDataset(chats, knowledges, tokenizer, max_len=1024)
+
         # 增量训练模型
         # 注意：你需要根据你的实际训练环境调整此部分
         training_args = TrainingArguments(
@@ -153,14 +188,14 @@ class LargeLanguageModel:
             num_train_epochs=1,  # 总训练轮次
             # 指定每个 GPU（如果有多个）上的训练批量大小。这个值相对较大，可能需要根据您的 GPU 内存来调整。
             # 每设备批量大小（per_device_train_batch_size）设置为 100 是相当大的。这可能需要大量的 GPU 内存。如果遇到内存不足的问题，您可能需要减小这个值。
-            per_device_train_batch_size=32,  # 每个设备的批大小
+            per_device_train_batch_size=4,  # 每个设备的批大小
             # 梯度累积允许您在多个小批次上累积梯度，然后一次性更新模型参数。
             # 允许使用更大的有效批量大小，而不增加 GPU 内存使用。
             # 可以提高训练稳定性，特别是对于小型数据集。
             gradient_accumulation_steps=4,
             # 设置学习率预热的步数。这里设为 0 意味着没有预热阶段，学习率将直接从初始值开始。对于短期或增量训练，这可能是合适的。
             # 没有学习率预热（warmup_steps = 0）对于短期训练来说是可以的，但如果您决定增加训练轮数，可能需要考虑添加预热步骤。
-            warmup_steps=0,  # 预热步骤
+            warmup_steps=10,  # 预热步骤
             # 设置权重衰减率，用于 L2 正则化以防止过拟合。0.01 是一个常见的初始值，但可能需要根据具体情况调整。
             # 权重衰减（weight_decay）设置为 0.01 是一个好的起点，但您可能需要根据模型的表现来调整这个值。
             weight_decay=0.01,  # 权重衰减
@@ -173,20 +208,12 @@ class LargeLanguageModel:
             fp16=True,
         )
 
-        # def custom_collate_fn(batch):
-        #     # 使用DataCollatorWithPadding确保批处理中所有项都填充到相同长度
-        #     collator = DataCollatorWithPadding(
-        #         padding=True, tokenizer=tokenizer, return_tensors="pt"
-        #     )
-        #     return collator(batch)
-
         trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset,  # 使用新的训练数据
-            # data_collator=custom_collate_fn,  # 使用自定义的数据合并函数
-            # 这里可能还需要一个评估数据集
         )
+
         trainer.train()
         return "ok"
 
@@ -230,12 +257,16 @@ async def create_corpus_entry(corpus_entry_input: CorpusEntryInput):
             raise HTTPException(status_code=404, detail="Corpus not found")
 
         corpus_entry = CorpusEntry(
-            content=corpus_entry_input.content,
             entry_type=corpus_entry_input.entry_type,
             corpus=corpus,
         )
-        corpus_entry.save()
 
+        if corpus_entry_input.entry_type == "chat":
+            corpus_entry.messages = corpus_entry_input.messages
+        else:
+            corpus_entry.content = corpus_entry_input.content
+
+        corpus_entry.save()
         corpus.update_timestamp()
 
         return {
