@@ -5,13 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/material.dart';
 
-enum Mode {
-  Chat,
-  Batch,
-  LearnKnowledge,
-  LearnChat,
-  Corpus,
-}
+enum Mode { Chat, Corpus, Train }
 
 class GlobalProvider extends ChangeNotifier {
   Mode _mode = Mode.Chat;

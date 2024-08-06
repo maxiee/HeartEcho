@@ -31,39 +31,9 @@ class GlobalTitlebar extends StatelessWidget {
                     if (currentMode == Mode.Chat) return;
                     globalProvider.changeMode(Mode.Chat);
                   },
-                  child: Text('聊天',
+                  child: Text('聊天室',
                       style: TextStyle(
                           color: currentMode == Mode.Chat
-                              ? Colors.blue
-                              : Colors.black))),
-              TextButton(
-                  onPressed: () {
-                    if (currentMode == Mode.Batch) return;
-                    globalProvider.changeMode(Mode.Batch);
-                  },
-                  child: Text('待训练池',
-                      style: TextStyle(
-                          color: currentMode == Mode.Batch
-                              ? Colors.blue
-                              : Colors.black))),
-              TextButton(
-                  onPressed: () {
-                    if (currentMode == Mode.LearnKnowledge) return;
-                    globalProvider.changeMode(Mode.LearnKnowledge);
-                  },
-                  child: Text('学知识',
-                      style: TextStyle(
-                          color: currentMode == Mode.LearnKnowledge
-                              ? Colors.blue
-                              : Colors.black))),
-              TextButton(
-                  onPressed: () {
-                    if (currentMode == Mode.LearnChat) return;
-                    globalProvider.changeMode(Mode.LearnChat);
-                  },
-                  child: Text('学聊天',
-                      style: TextStyle(
-                          color: currentMode == Mode.LearnChat
                               ? Colors.blue
                               : Colors.black))),
               TextButton(
@@ -74,6 +44,16 @@ class GlobalTitlebar extends StatelessWidget {
                   child: Text('语料库',
                       style: TextStyle(
                           color: currentMode == Mode.Corpus
+                              ? Colors.blue
+                              : Colors.black))),
+              TextButton(
+                  onPressed: () {
+                    if (currentMode == Mode.Train) return;
+                    globalProvider.changeMode(Mode.Train);
+                  },
+                  child: Text('炼丹炉',
+                      style: TextStyle(
+                          color: currentMode == Mode.Train
                               ? Colors.blue
                               : Colors.black))),
             ]),

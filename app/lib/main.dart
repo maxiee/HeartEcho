@@ -2,9 +2,6 @@ import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
 import 'package:app/pages/corpus/corpus_management_page.dart';
-import 'package:app/pages/learn/learn_batch_page.dart';
-import 'package:app/pages/learn/learn_chat_page.dart';
-import 'package:app/pages/learn/learn_knowledge_page.dart';
 import 'package:app/providers/batch_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -57,9 +54,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final globalProvider = Provider.of<GlobalProvider>(context);
     final currentMode = globalProvider.mode;
     if (currentMode == Mode.Chat) return const ChatPage();
-    if (currentMode == Mode.Batch) return const LearnBatchPage();
-    if (currentMode == Mode.LearnKnowledge) return const LearnKnowledgePage();
-    if (currentMode == Mode.LearnChat) return const LearnChatPage();
     if (currentMode == Mode.Corpus) return const CorpusManagementPage();
     return const Placeholder();
   }

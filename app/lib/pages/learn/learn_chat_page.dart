@@ -1,9 +1,11 @@
+import 'package:app/api/api.dart';
 import 'package:app/models/corpus.dart';
 import 'package:flutter/material.dart';
 
 class LearnChatPage extends StatefulWidget {
-  const LearnChatPage({super.key, this.entry});
+  const LearnChatPage({super.key, required this.corpus, this.entry});
 
+  final Corpus corpus;
   final CorpusEntry? entry;
 
   @override
@@ -18,7 +20,9 @@ class _LearnChatPageState extends State<LearnChatPage> {
   @override
   void initState() {
     super.initState();
-    // promptController.text = systemPromot;
+    if (widget.entry != null) {
+      messages = List<Map<String, String>>.from(widget.entry!.messages ?? []);
+    }
   }
 
   @override
@@ -31,11 +35,12 @@ class _LearnChatPageState extends State<LearnChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Chat Corpus'),
+        title:
+            Text(widget.entry == null ? 'Add Chat Entry' : 'Edit Chat Entry'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: () => _saveCorpus(context),
+            onPressed: () => _saveEntry(context),
           )
         ],
       ),
@@ -88,8 +93,26 @@ class _LearnChatPageState extends State<LearnChatPage> {
     );
   }
 
-  void _saveCorpus(BuildContext context) {
-    // Implement API call to save the corpus
-    // Use Provider.of<BatchProvider>(context, listen: false).addChatSession(messages);
+  void _saveEntry(BuildContext context) async {
+    try {
+      final Map<String, dynamic> data = {
+        'corpus_name': widget.corpus.name,
+        'entry_type': 'chat',
+        'messages': messages,
+      };
+
+      if (widget.entry == null) {
+        await API.createCorpusEntry(data);
+      } else {
+        // Assuming you have an API method to update an entry
+        await API.updateCorpusEntry(widget.entry!.id, data);
+      }
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving entry: $e')),
+      );
+    }
   }
 }

@@ -59,7 +59,7 @@ class ApiClient {
     return null;
   }
 
-  Future<List<dynamic>?> fetchCorpusEntries({
+  Future<List<dynamic>> fetchCorpusEntries({
     required String corpusId,
     int skip = 0,
     int limit = 100,
@@ -76,9 +76,39 @@ class ApiClient {
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data['entries'];
+      return json.decode(data['entries']);
     } else {
       throw Exception('Failed to fetch corpus entries: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> createCorpusEntry(
+      Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/corpus_entry'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to create corpus entry: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCorpusEntry(
+      String entryId, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/corpus_entry/$entryId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to update corpus entry: ${response.body}');
     }
   }
 }

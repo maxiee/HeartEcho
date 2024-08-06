@@ -1,3 +1,4 @@
+import 'package:app/models/utils.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'corpus.g.dart';
@@ -20,16 +21,20 @@ class Corpus {
 
 @JsonSerializable()
 class CorpusEntry {
+  @JsonKey(name: '_id', fromJson: idFromJson)
   final String id;
-  final String corpusId;
+  @JsonKey(fromJson: idFromJson)
+  final String corpus;
+  @JsonKey(name: 'entry_type')
   final String entryType;
+  @JsonKey(name: 'created_at', fromJson: dateTimeFromJson)
   final DateTime createdAt;
   final String? content;
   final List<Message>? messages;
 
   CorpusEntry({
     required this.id,
-    required this.corpusId,
+    required this.corpus,
     required this.entryType,
     required this.createdAt,
     this.content,

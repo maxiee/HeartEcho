@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:app/api/api.dart';
 import 'package:app/models/corpus.dart';
 import 'package:app/pages/learn/learn_chat_page.dart';
@@ -50,9 +52,18 @@ class CorpusDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(corpus.name)),
+      appBar: AppBar(
+        title: Text(corpus.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddEntryDialog(context),
+          ),
+        ],
+      ),
       body: FutureBuilder(
-        future: API.fetchCorpusEntries(corpus.id), // Implement this method
+        future: API.fetchCorpusEntries(
+            corpusId: corpus.id), // Implement this method
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
@@ -69,19 +80,79 @@ class CorpusDetailPage extends StatelessWidget {
                 subtitle: Text(entry.entryType == 'chat'
                     ? '${entry.messages?.length} messages'
                     : '${entry.content?.substring(0, 50)}...'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => entry.entryType == 'chat'
-                        ? LearnChatPage(entry: entry)
-                        : LearnKnowledgePage(entry: entry),
-                  ),
-                ),
+                onTap: () => _editEntry(context, entry),
               );
             },
           );
         },
       ),
     );
+  }
+
+  void _showAddEntryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Entry'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Chat'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addChatEntry(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Knowledge'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addKnowledgeEntry(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _addChatEntry(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LearnChatPage(corpus: corpus),
+      ),
+    );
+  }
+
+  void _addKnowledgeEntry(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LearnKnowledgePage(corpus: corpus),
+      ),
+    );
+  }
+
+  void _editEntry(BuildContext context, CorpusEntry entry) {
+    if (entry.entryType == 'chat') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LearnChatPage(corpus: corpus, entry: entry),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              LearnKnowledgePage(corpus: corpus, entry: entry),
+        ),
+      );
+    }
   }
 }
