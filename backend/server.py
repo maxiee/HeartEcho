@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+import json
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
@@ -6,6 +8,9 @@ from database import init_db
 from llm_manager import LLMManager
 from models.corpus import Corpus
 from models.corpus_entry import CorpusEntry
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Initialize database connection
 init_db()
@@ -145,21 +150,54 @@ async def get_corpora():
     return {"corpora": corpora}
 
 
-@app.get("/corpus/{corpus_id}/corpus_entries")
-async def get_corpus_entries(corpus_id: str, skip: int = 0, limit: int = 100):
-    corpus = Corpus.objects(id=corpus_id).first()
-    if not corpus:
-        raise HTTPException(status_code=404, detail="Corpus not found")
+@app.get("/corpus_entries")
+async def get_corpus_entries(
+    corpus_id: str = Query(..., description="The ID of the corpus"),
+    skip: int = Query(0, description="Number of entries to skip"),
+    limit: int = Query(100, description="Maximum number of entries to return"),
+):
+    try:
+        logger.info(f"Fetching corpus entries for corpus_id: {corpus_id}")
+        corpus = Corpus.objects(id=corpus_id).first()
+        if not corpus:
+            logger.warning(f"Corpus not found for id: {corpus_id}")
+            raise HTTPException(status_code=404, detail="Corpus not found")
 
-    total_count = CorpusEntry.objects(corpus=corpus).count()
-    entries = CorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
+        total_count = CorpusEntry.objects(corpus=corpus).count()
+        entries = CorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
 
-    return {
-        "total": total_count,
-        "entries": entries.to_json(),
-        "skip": skip,
-        "limit": limit,
-    }
+        logger.info(f"Retrieved {len(entries)} entries for corpus_id: {corpus_id}")
+        return {
+            "total": total_count,
+            "entries": entries.to_json(),
+            "skip": skip,
+            "limit": limit,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching corpus entries: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.middleware("http")
+async def log_responses(request: Request, call_next):
+    response = await call_next(request)
+
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+
+    # Reconstruct the response
+    response = JSONResponse(
+        content=json.loads(response_body),
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
+
+    print(f"Endpoint: {request.url.path}")
+    print(f"Response: {response_body.decode()}")
+    print("---")
+
+    return response
 
 
 if __name__ == "__main__":

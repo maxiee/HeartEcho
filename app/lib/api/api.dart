@@ -59,14 +59,27 @@ class ApiClient {
     return null;
   }
 
-  Future<List<dynamic>?> fetchCorpusEntries(String corpusId) async {
-    final response = await http.get(
-        Uri.parse('http://localhost:1127/corpus/$corpusId/corpus_entries'));
+  Future<List<dynamic>?> fetchCorpusEntries({
+    required String corpusId,
+    int skip = 0,
+    int limit = 100,
+  }) async {
+    final queryParameters = {
+      'corpus_id': corpusId,
+      'skip': skip.toString(),
+      'limit': limit.toString(),
+    };
+
+    final uri = Uri.parse('$baseUrl/corpus_entries')
+        .replace(queryParameters: queryParameters);
+
+    final response = await http.get(uri);
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body)['entries'];
-      return data;
+      final data = json.decode(response.body);
+      return data['entries'];
+    } else {
+      throw Exception('Failed to fetch corpus entries: ${response.statusCode}');
     }
-    return null;
   }
 }
 

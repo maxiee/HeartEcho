@@ -24,7 +24,6 @@ class HeartEchoDataset(Dataset):
             self.examples.append(knowledge.content)
         self.encodings = tokenizer(
             self.examples,
-            padding=True,
             truncation=True,
             padding="max_length",
             return_tensors="pt",

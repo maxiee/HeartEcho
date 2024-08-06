@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python ../ProjectToContext/main.py lib/app
+python ../ProjectToContext/main.py app/lib
