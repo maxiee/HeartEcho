@@ -108,11 +108,15 @@ class _LearnChatPageState extends State<LearnChatPage> {
         await API.updateCorpusEntry(widget.entry!.id, data);
       }
 
-      Navigator.pop(context, true); // Return true to indicate success
+      if (context.mounted) {
+        Navigator.pop(context, true); // Return true to indicate success
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving entry: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving entry: $e')),
+        );
+      }
     }
   }
 }

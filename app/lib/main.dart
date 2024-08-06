@@ -2,14 +2,18 @@ import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
 import 'package:app/pages/corpus/corpus_management_page.dart';
+import 'package:app/pages/train/train_page.dart';
 import 'package:app/providers/batch_provider.dart';
+import 'package:app/providers/global_training_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (context) => GlobalProvider()),
-    ChangeNotifierProvider(create: (context) => BatchProvider())
+    ChangeNotifierProvider(create: (context) => BatchProvider()),
+    ChangeNotifierProvider(
+        create: (context) => GlobalTrainingSessionProvider()),
   ], child: const MyApp()));
 }
 
@@ -55,6 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final currentMode = globalProvider.mode;
     if (currentMode == Mode.Chat) return const ChatPage();
     if (currentMode == Mode.Corpus) return const CorpusManagementPage();
+    if (currentMode == Mode.Train) return const TrainPage();
     return const Placeholder();
   }
 }

@@ -1,4 +1,6 @@
 import json
+import os
+import time
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -9,6 +11,7 @@ from llm_manager import LLMManager
 from models.corpus import Corpus
 from models.corpus_entry import CorpusEntry
 import logging
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +183,9 @@ async def get_corpus_entries(
 
 @app.middleware("http")
 async def log_responses(request: Request, call_next):
+    print("---")
+    print(f"start Endpoint: {request.url.path}")
+
     response = await call_next(request)
 
     response_body = b""
@@ -198,6 +204,54 @@ async def log_responses(request: Request, call_next):
     print("---")
 
     return response
+
+
+@app.get("/saved_models")
+async def get_saved_models():
+    try:
+        # Get the list of saved models from the model directory
+        model_dir = settings.model_dir
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir, exist_ok=True)
+        saved_models = [
+            f
+            for f in os.listdir(model_dir)
+            if os.path.isdir(os.path.join(model_dir, f))
+        ]
+        return {"models": saved_models}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/create_training_session")
+async def create_training_session():
+    try:
+        # Create a new directory for the training session
+        session_name = f"training_session_{int(time.time())}"
+        session_dir = os.path.join(settings.model_dir, session_name)
+        os.makedirs(session_dir, exist_ok=True)
+
+        # Initialize the model for the new session
+        llm_manager.init_new_model(session_dir)
+
+        return {"message": "New training session created", "session_name": session_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/load_model")
+async def load_model(model_name: str):
+    try:
+        model_path = os.path.join(settings.model_dir, model_name)
+        if not os.path.exists(model_path):
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        # Load the specified model
+        llm_manager.load_model(model_path)
+
+        return {"message": f"Model {model_name} loaded successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

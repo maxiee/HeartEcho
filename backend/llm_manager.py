@@ -47,15 +47,23 @@ class LLMManager:
         self.tokenizer = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    def load_model(self):
-        if os.path.exists(settings.model_dir):
-            self.model = AutoModelForCausalLM.from_pretrained(settings.model_dir)
-        else:
-            self.model = AutoModelForCausalLM.from_pretrained(
-                settings.model_name, torch_dtype="auto", device_map="auto"
-            )
-        self.tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
+    def load_model(self, model_path):
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype="auto", device_map="auto"
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model.to(self.device)
+
+    def init_new_model(self, save_path):
+        # Initialize a new model from the base model
+        self.model = AutoModelForCausalLM.from_pretrained(
+            settings.model_name, torch_dtype="auto", device_map="auto"
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
+
+        # Save the initialized model
+        # self.model.save_pretrained(save_path)
+        # self.tokenizer.save_pretrained(save_path)
 
     def chat(self, history):
         if not self.model or not self.tokenizer:

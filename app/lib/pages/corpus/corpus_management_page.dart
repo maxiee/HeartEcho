@@ -118,17 +118,21 @@ class _CorpusManagementPageState extends State<CorpusManagementPage> {
   void _addCorpus(BuildContext context, String name, String description) async {
     try {
       await API.createCorpus(name: name, description: description);
-      Navigator.of(context).pop(); // Close the dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Corpus created successfully')),
-      );
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close the dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Corpus created successfully')),
+        );
+      }
       // Refresh the page
       _fetchCorpora();
     } catch (e) {
-      Navigator.of(context).pop(); // Close the dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating corpus: $e')),
-      );
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close the dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating corpus: $e')),
+        );
+      }
     }
   }
 }

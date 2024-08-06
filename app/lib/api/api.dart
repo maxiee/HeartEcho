@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/models/chat.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -126,6 +128,49 @@ class ApiClient {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to create corpus: ${response.body}');
+    }
+  }
+
+  Future<List<String>> getSavedModels() async {
+    final response = await http.get(Uri.parse('$baseUrl/saved_models'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<String>.from(data['models']);
+    } else {
+      throw Exception('Failed to load saved models');
+    }
+  }
+
+  Future<String> createNewTrainingSession() async {
+    final client = http.Client();
+    try {
+      final response = await client.post(
+        Uri.parse('$baseUrl/create_training_session'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(minutes: 30)); // Set a 30-minute timeout
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['session_name'];
+      } else {
+        throw Exception(
+            'Failed to create new training session: ${response.body}');
+      }
+    } on TimeoutException {
+      throw Exception('Operation timed out after 30 minutes');
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<void> loadExistingModel(String modelName) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/load_model'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'model_name': modelName}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load model: ${response.body}');
     }
   }
 }
