@@ -1,6 +1,7 @@
 import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
+import 'package:app/pages/corpus/corpus_management_page.dart';
 import 'package:app/pages/learn/learn_batch_page.dart';
 import 'package:app/pages/learn/learn_chat_page.dart';
 import 'package:app/pages/learn/learn_knowledge_page.dart';
@@ -69,6 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (currentMode == Mode.Batch) return LearnBatchPage();
     if (currentMode == Mode.LearnKnowledge) return LearnKnowledgePage();
     if (currentMode == Mode.LearnChat) return LearnChatPage();
+    if (currentMode == Mode.Corpus) return CorpusManagementPage();
     return Placeholder();
   }
 }
