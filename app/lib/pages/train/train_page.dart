@@ -1,3 +1,4 @@
+import 'package:app/pages/train/components/error_distribution_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/api/api.dart';
@@ -40,6 +41,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       });
     } catch (e) {
       if (context.mounted) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading models: $e')),
         );
@@ -73,51 +75,58 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ElevatedButton(
-                    onPressed: globalSessionProvider.isSessionActive
-                        ? null
-                        : () => _startNewTrainingSession(context),
-                    child: const Text('Start New Training'),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Or load an existing model:'),
-                  const SizedBox(height: 10),
-                  DropdownButton<String>(
-                    value: selectedModel,
-                    hint: const Text('Select a model'),
-                    items: savedModels.map((String model) {
-                      return DropdownMenuItem<String>(
-                        value: model,
-                        child: Text(model),
-                      );
-                    }).toList(),
-                    onChanged: globalSessionProvider.isSessionActive
-                        ? null
-                        : (String? newValue) {
-                            setState(() {
-                              selectedModel = newValue;
-                            });
-                          },
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: globalSessionProvider.isSessionActive ||
-                            selectedModel == null
-                        ? null
-                        : () => _loadExistingModel(context),
-                    child: const Text('Load Selected Model'),
-                  ),
-                  if (globalSessionProvider.isSessionActive) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                        'Active session: ${globalSessionProvider.currentSessionName}'),
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (globalSessionProvider.isSessionActive) ...[
+                      Text(
+                          'Active session: ${globalSessionProvider.currentSessionName}'),
+                      const SizedBox(height: 20),
+                      ErrorDistributionChart(
+                          sessionName:
+                              globalSessionProvider.currentSessionName!),
+                      const SizedBox(height: 20),
+                    ] else ...[
+                      ElevatedButton(
+                        onPressed: globalSessionProvider.isSessionActive
+                            ? null
+                            : () => _startNewTrainingSession(context),
+                        child: const Text('Start New Training'),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('Or load an existing model:'),
+                      const SizedBox(height: 10),
+                      DropdownButton<String>(
+                        value: selectedModel,
+                        hint: const Text('Select a model'),
+                        items: savedModels.map((String model) {
+                          return DropdownMenuItem<String>(
+                            value: model,
+                            child: Text(model),
+                          );
+                        }).toList(),
+                        onChanged: globalSessionProvider.isSessionActive
+                            ? null
+                            : (String? newValue) {
+                                setState(() {
+                                  selectedModel = newValue;
+                                });
+                              },
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: globalSessionProvider.isSessionActive ||
+                                selectedModel == null
+                            ? null
+                            : () => _loadExistingModel(context),
+                        child: const Text('Load Selected Model'),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
     );

@@ -12,6 +12,8 @@ from models.corpus import Corpus
 from models.corpus_entry import CorpusEntry
 import logging
 from config import settings
+from models.error_range import ErrorRange
+from models.training_error import TrainingError
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +254,33 @@ async def load_model(model_name: str):
         return {"message": f"Model {model_name} loaded successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/error_distribution")
+async def get_error_distribution(
+    session: str = Query(..., description="Training session name")
+):
+    distribution = TrainingError.get_distribution(session)
+    ranges = ErrorRange.objects.order_by("lower_bound")
+
+    data = []
+    range_index = 0
+    for range in ranges:
+        count = 0
+        if (
+            range_index < len(distribution)
+            and distribution[range_index]["_id"] == range.id
+        ):
+            count = distribution[range_index]["count"]
+            range_index += 1
+        data.append(
+            {
+                "range": f"{range.lower_bound:.1f}-{range.upper_bound:.1f}",
+                "count": count,
+            }
+        )
+
+    return {"distribution": data}
 
 
 if __name__ == "__main__":

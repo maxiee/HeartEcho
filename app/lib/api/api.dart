@@ -173,6 +173,17 @@ class ApiClient {
       throw Exception('Failed to load model: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> getErrorDistribution(String sessionName) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/error_distribution?session=$sessionName'),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load error distribution');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

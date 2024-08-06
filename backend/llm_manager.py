@@ -62,8 +62,8 @@ class LLMManager:
         self.tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
 
         # Save the initialized model
-        # self.model.save_pretrained(save_path)
-        # self.tokenizer.save_pretrained(save_path)
+        self.model.save_pretrained(save_path)
+        self.tokenizer.save_pretrained(save_path)
 
     def chat(self, history):
         if not self.model or not self.tokenizer:
