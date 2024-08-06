@@ -14,8 +14,7 @@ class CorpusManagementPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Corpus Management')),
       body: FutureBuilder(
-        future: API
-            .fetchCorpora(), // Implement this method to fetch corpora from API
+        future: API.fetchCorpora(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
@@ -44,16 +43,35 @@ class CorpusManagementPage extends StatelessWidget {
   }
 }
 
-class CorpusDetailPage extends StatelessWidget {
+class CorpusDetailPage extends StatefulWidget {
   final Corpus corpus;
 
   const CorpusDetailPage({super.key, required this.corpus});
 
   @override
+  State createState() => _CorpusDetailPageState();
+}
+
+class _CorpusDetailPageState extends State<CorpusDetailPage> {
+  late Future<List<dynamic>> _entriesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshEntries();
+  }
+
+  void _refreshEntries() {
+    setState(() {
+      _entriesFuture = API.fetchCorpusEntries(corpusId: widget.corpus.id);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(corpus.name),
+        title: Text(widget.corpus.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -62,8 +80,7 @@ class CorpusDetailPage extends StatelessWidget {
         ],
       ),
       body: FutureBuilder(
-        future: API.fetchCorpusEntries(
-            corpusId: corpus.id), // Implement this method
+        future: _entriesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
@@ -71,7 +88,7 @@ class CorpusDetailPage extends StatelessWidget {
           final entriesData = snapshot.data as List<dynamic>;
           final entries =
               entriesData.map((data) => CorpusEntry.fromJson(data)).toList();
-          return ListView.builder(
+          return ListView.separated(
             itemCount: entries.length,
             itemBuilder: (context, index) {
               final entry = entries[index];
@@ -83,6 +100,7 @@ class CorpusDetailPage extends StatelessWidget {
                 onTap: () => _editEntry(context, entry),
               );
             },
+            separatorBuilder: (context, index) => const Divider(),
           );
         },
       ),
@@ -119,40 +137,41 @@ class CorpusDetailPage extends StatelessWidget {
     );
   }
 
-  void _addChatEntry(BuildContext context) {
-    Navigator.push(
+  void _addChatEntry(BuildContext context) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LearnChatPage(corpus: corpus),
+        builder: (context) => LearnChatPage(corpus: widget.corpus),
       ),
     );
+    if (result == true) {
+      _refreshEntries();
+    }
   }
 
-  void _addKnowledgeEntry(BuildContext context) {
-    Navigator.push(
+  void _addKnowledgeEntry(BuildContext context) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LearnKnowledgePage(corpus: corpus),
+        builder: (context) => LearnKnowledgePage(corpus: widget.corpus),
       ),
     );
+    if (result == true) {
+      _refreshEntries();
+    }
   }
 
-  void _editEntry(BuildContext context, CorpusEntry entry) {
-    if (entry.entryType == 'chat') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LearnChatPage(corpus: corpus, entry: entry),
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              LearnKnowledgePage(corpus: corpus, entry: entry),
-        ),
-      );
+  void _editEntry(BuildContext context, CorpusEntry entry) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => entry.entryType == 'chat'
+            ? LearnChatPage(corpus: widget.corpus, entry: entry)
+            : LearnKnowledgePage(corpus: widget.corpus, entry: entry),
+      ),
+    );
+    if (result == true) {
+      _refreshEntries();
     }
   }
 }
