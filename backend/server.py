@@ -75,56 +75,37 @@ class CorpusEntryInput(BaseModel):
         }
 
 
-# ================================================================
-# LLM 模型部分
-# ================================================================
-
-IGNORE_TOKEN_ID = LabelSmoother.ignore_index  # 设置忽略令牌的ID，用于损失计算时忽略
-
-TEMPLATE = "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' }}{% endif %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
-
-
-# 加载模型和分词器
-if os.path.exists(settings.model_dir):
-    model = AutoModelForCausalLM.from_pretrained(settings.model_dir)
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        settings.model_name, torch_dtype="auto", device_map="auto"
-    )
-tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
-
-
-def preprocess_chat(messages, tokenizer, max_len):
-    print("preprocessing")
-    print(messages)
-
-    message_with_prompt = tokenizer.apply_chat_template(
-        messages,
-        chat_template=TEMPLATE,
-        tokenize=True,
-        add_generation_prompt=False,
-        padding="max_length",
-        max_length=max_len,
-        truncation=True,
-    )
-    return message_with_prompt
-
-
 @app.post("/chat")
 def chat(chat_input: ChatInput):
-    return {"response": api_model.chat(chat_input.history)}
+    try:
+        response = llm_manager.chat(chat_input.history)
+        return {"response": response}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/learn")
 def learn(input: LearnInput):
-    api_model.learn(input.chat, input.knowledge)
-    return "ok"
+    try:
+        result = llm_manager.learn(input.chat, input.knowledge)
+        return {"message": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/save_model")
 def save_model():
-    # 这里应该是你的模型保存逻辑，现在只是返回一个简单的响应
-    return {"saved": True}
+    try:
+        result = llm_manager.save_model()
+        return {"saved": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/corpus")
