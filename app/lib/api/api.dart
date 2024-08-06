@@ -196,6 +196,20 @@ class ApiClient {
       throw Exception('Failed to load new corpus entries count');
     }
   }
+
+  Future<Map<String, dynamic>> smeltNewCorpus(String sessionName) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/smelt_new_corpus'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session': sessionName}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to smelt new corpus: ${response.body}');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

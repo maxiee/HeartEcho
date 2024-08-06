@@ -1,4 +1,5 @@
 import 'package:app/pages/train/components/error_distribution_chart.dart';
+import 'package:app/pages/train/components/skill_card.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   List<String> savedModels = [];
   bool isLoading = true;
   String? selectedModel;
+  bool isSmeltingInProgress = false;
 
   @override
   void initState() {
@@ -107,10 +109,17 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                           sessionName:
                               globalSessionProvider.currentSessionName!),
                       newCorpusEntriesProvider.isLoading
-                          ? CircularProgressIndicator()
+                          ? const CircularProgressIndicator()
                           : Text(
                               'New corpus entries: ${newCorpusEntriesProvider.count}'),
                       const SizedBox(height: 20),
+                      SkillCard(
+                        title: 'New Corpus Smelting',
+                        description:
+                            'Train the model with a batch of new corpus entries.',
+                        onActivate: () => _smeltNewCorpus(context),
+                        isActive: isSmeltingInProgress,
+                      ),
                     ] else ...[
                       ElevatedButton(
                         onPressed: globalSessionProvider.isSessionActive
@@ -152,6 +161,42 @@ class _TrainPageContentState extends State<_TrainPageContent> {
               ),
             ),
     );
+  }
+
+  Future<void> _smeltNewCorpus(BuildContext context) async {
+    final globalSessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context, listen: false);
+
+    setState(() {
+      isSmeltingInProgress = true;
+    });
+
+    try {
+      final result =
+          await API.smeltNewCorpus(globalSessionProvider.currentSessionName!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'New corpus smelting completed. Loss: ${result['loss']}')),
+        );
+      }
+      // Refresh the error distribution and new corpus entries count
+      await newCorpusEntriesProvider.fetchNewCorpusEntriesCount(
+          globalSessionProvider.currentSessionName!);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error smelting new corpus: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        isSmeltingInProgress = false;
+      });
+    }
   }
 
   Future<void> _startNewTrainingSession(BuildContext context) async {

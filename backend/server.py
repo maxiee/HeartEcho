@@ -261,20 +261,34 @@ async def load_model(input: LoadModelInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class SmeltCorpusInput(BaseModel):
+    session: str
+
+
+@app.post("/smelt_new_corpus")
+async def smelt_new_corpus(input: SmeltCorpusInput):
+    try:
+        result = llm_manager.smelt_new_corpus(input.session)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/error_distribution")
 async def get_error_distribution(
     session: str = Query(..., description="Training session name")
 ):
-    distribution = TrainingError.get_distribution(session)
+    distribution = llm_manager.get_error_distribution(session)
     ranges = ErrorRange.objects.order_by("lower_bound")
 
     data = []
     range_index = 0
     for range in ranges:
         count = 0
-        if (
-            range_index < len(distribution)
-            and distribution[range_index]["_id"] == range.id
+        if range_index < len(distribution) and distribution[range_index]["_id"] == str(
+            range.id
         ):
             count = distribution[range_index]["count"]
             range_index += 1
