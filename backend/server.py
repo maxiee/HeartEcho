@@ -1,15 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
-import torch
-from torch.utils.data import Dataset
-from transformers.trainer_pt_utils import LabelSmoother
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
-from transformers import DataCollatorWithPadding
-import os
 
 from database import init_db
-from config import settings
 from llm_manager import LLMManager
 from models.corpus import Corpus
 from models.corpus_entry import CorpusEntry
