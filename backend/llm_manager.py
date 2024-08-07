@@ -7,6 +7,7 @@ from domain.corpus import CorpusEntry
 from models.error_range import ErrorRange
 from models.training_error import TrainingError
 from app.core.config import settings
+from services.training_session_service import TrainingSessionService
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 TEMPLATE = "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' }}{% endif %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
@@ -45,11 +46,12 @@ class HeartEchoDataset(Dataset):
 
 
 class LLMManager:
-    def __init__(self):
+    def __init__(self, training_session_service: TrainingSessionService):
         self.model = None
         self.tokenizer = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.cached_errors = {}
+        self.training_session_service = training_session_service
 
     def load_model(self, model_path):
         print(f"Loading model from {model_path}")
@@ -123,6 +125,10 @@ class LLMManager:
         return "ok"
 
     def smelt_new_corpus(self, session_name, batch_size=16):
+        current_session = self.training_session_service.get_current_session()
+        if not current_session:
+            raise ValueError("No active training session")
+
         # Get all corpus entries
         all_entries = set(CorpusEntry.objects().all())
 
@@ -192,15 +198,24 @@ class LLMManager:
         for entry in selected_entries:
             self.cached_errors[session_name][str(entry.id)] = loss
 
+        # 更新训练会话的指标
+        self.training_session_service.update_metrics(
+            {"loss": loss, "entries_trained": len(selected_entries)}
+        )
+
         return {
             "message": "New corpus smelting completed",
             "loss": loss,
             "entries_trained": len(selected_entries),
         }
 
-    def get_error_distribution(self, session_name):
+    def get_error_distribution(self):
+        current_session = self.training_session_service.get_current_session()
+        if not current_session:
+            raise ValueError("No active training session")
+
         # Get distribution from database
-        db_distribution = TrainingError.get_distribution(session_name)
+        db_distribution = TrainingError.get_distribution(current_session.name)
 
         # Convert db_distribution to a dictionary for easier manipulation
         distribution_dict = {
@@ -208,7 +223,7 @@ class LLMManager:
         }
 
         # Get cached errors for this session
-        cached_errors = self.cached_errors.get(session_name, {})
+        cached_errors = self.cached_errors.get(current_session.name, {})
 
         # Process cached errors
         for entry_id, error in cached_errors.items():
@@ -236,9 +251,14 @@ class LLMManager:
         return updated_distribution
 
     def save_model(self):
+        current_session = self.training_session_service.get_current_session()
+        if not current_session:
+            raise ValueError("No active training session")
+
         if not self.model:
             raise ValueError("Model not loaded. Call load_model() first.")
 
+        # TODO fixme: save the model to the session
         self.model.save_pretrained(settings.model_dir)
         self.tokenizer.save_pretrained(settings.model_dir)
         return True

@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from .model import Model
 
 
 @dataclass
@@ -9,7 +8,7 @@ class TrainingSession:
 
     id: str
     name: str
-    model: Model
+    base_model: str
     start_time: datetime
     last_trained: datetime
     metrics: dict = field(default_factory=dict)
