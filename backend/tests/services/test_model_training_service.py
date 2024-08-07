@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
 from datetime import datetime
-from domain.model import Model
 from domain.corpus import Corpus
 from domain.training_session import TrainingSession
 from services.model_training_service import ModelTrainingService
@@ -16,14 +15,6 @@ class TestModelTrainingService(unittest.TestCase):
     @patch("services.model_training_service.generate_id")
     def test_start_training_session(self, mock_generate_id):
         mock_generate_id.return_value = "session1"
-        mock_model = Model(
-            id="model1",
-            name="Test Model",
-            base_model="base",
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-            parameters=1000000,
-        )
         mock_corpus = Corpus(
             id="corpus1",
             name="Test Corpus",
@@ -32,14 +23,12 @@ class TestModelTrainingService(unittest.TestCase):
             updated_at=datetime.now(),
         )
 
-        self.mock_model_repo.get_by_id.return_value = mock_model
         self.mock_corpus_repo.get_by_id.return_value = mock_corpus
 
         result = self.service.start_training_session("model1", "corpus1")
 
         self.assertIsInstance(result, TrainingSession)
         self.assertEqual(result.id, "session1")
-        self.assertEqual(result.model, mock_model)
         self.assertEqual(result.corpus, mock_corpus)
         self.assertEqual(result.status, "in_progress")
 

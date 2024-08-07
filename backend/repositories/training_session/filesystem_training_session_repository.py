@@ -3,7 +3,6 @@ import json
 from typing import List, Optional
 from datetime import datetime
 from domain.training_session import TrainingSession
-from domain.model import Model
 from repositories.training_session.training_session_repository import (
     TrainingSessionRepository,
 )
@@ -92,18 +91,10 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
             json.dump(info, f, indent=2)
 
     def _create_session_from_info(self, info: dict) -> TrainingSession:
-        model = Model(
-            id=info["model"]["id"],
-            name=info["model"]["name"],
-            base_model=info["model"]["base_model"],
-            parameters=info["model"]["parameters"],
-            created_at=datetime.fromisoformat(info["model"]["created_at"]),
-            updated_at=datetime.fromisoformat(info["model"]["updated_at"]),
-        )
         return TrainingSession(
             id=info["id"],
             name=info["name"],
-            model=model,
+            model=info["base_model"],
             start_time=datetime.fromisoformat(info["start_time"]),
             last_trained=datetime.fromisoformat(info["last_trained"]),
             metrics=info["metrics"],

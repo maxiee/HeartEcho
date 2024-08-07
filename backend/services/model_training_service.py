@@ -2,9 +2,7 @@ import os
 import torch
 from datetime import datetime
 from typing import Dict
-from domain.model import Model
 from domain.training_session import TrainingSession
-from repositories.model_repository import ModelRepository
 from repositories.training_session.training_session_repository import (
     TrainingSessionRepository,
 )
@@ -12,17 +10,14 @@ from utils.id_generator import IdGenerator
 
 
 class ModelTrainingService:
-    def __init__(
-        self, model_repo: ModelRepository, session_repo: TrainingSessionRepository
-    ):
-        self.model_repo = model_repo
+    def __init__(self, session_repo: TrainingSessionRepository):
         self.session_repo = session_repo
 
-    def create_training_session(self, name: str, model: Model) -> TrainingSession:
+    def create_training_session(self, name: str, base_model: str) -> TrainingSession:
         session = TrainingSession(
             id=IdGenerator.generate(),
             name=name,
-            model=model,
+            base_model=base_model,
             start_time=datetime.now(),
             last_trained=datetime.now(),
             metrics={},
