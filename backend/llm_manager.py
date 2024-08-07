@@ -160,6 +160,7 @@ class LLMManager:
             warmup_steps=0,
             logging_steps=1,
             learning_rate=5e-5,
+            save_strategy="no",
         )
 
         trainer = Trainer(

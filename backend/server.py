@@ -20,10 +20,13 @@ logger = logging.getLogger(__name__)
 # Initialize database connection
 init_db()
 
-app = FastAPI()
+# Ensure ErrorRanges exist
+ErrorRange.initialize()
 
 # Initialize LLMManager
 llm_manager = LLMManager()
+
+app = FastAPI()
 
 
 class ChatInput(BaseModel):
