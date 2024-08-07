@@ -1,4 +1,3 @@
-# app/api/routes/corpus.py
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from app.core.dependencies import get_corpus_service

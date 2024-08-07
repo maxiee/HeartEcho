@@ -6,8 +6,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
-from database import init_db
-from domain import corpus
 from domain.corpus import Corpus, CorpusEntry
 from llm_manager import LLMManager
 
@@ -19,11 +17,11 @@ from repositories.corpus_entry.mongodb_corpus_entry_repository import (
     MongoDBCorpusEntryRepository,
 )
 from services.corpus_management_service import CorpusManagementService
+import app.api.routes.corpus as corpus_routes
+import app.api.routes.sessions as sessions_routes
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-# Initialize database connection
-init_db()
 
 # Ensure ErrorRanges exist
 ErrorRange.initialize()
@@ -33,9 +31,10 @@ llm_manager = LLMManager()
 
 app = FastAPI()
 
-app.include_router(corpus.router, prefix="/corpus", tags=["corpus"])
-app.include_router(model.router, prefix="/model", tags=["model"])
-app.include_router(training.router, prefix="/training", tags=["training"])
+app.include_router(corpus_routes.router, prefix="/corpus", tags=["corpus"])
+app.include_router(sessions_routes.router, prefix="/sessions", tags=["sessions"])
+# app.include_router(model.router, prefix="/model", tags=["model"])
+# app.include_router(training.router, prefix="/training", tags=["training"])
 
 
 def get_corpus_service():
@@ -149,58 +148,6 @@ def save_model():
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/corpus", response_model=List[Corpus])
-async def get_corpora(
-    skip: int = 0,
-    limit: int = 100,
-    service: CorpusManagementService = Depends(get_corpus_service),
-):
-    return service.list_corpora(skip=skip, limit=limit)
-
-
-class CorpusInput(BaseModel):
-    name: str
-    description: str = ""
-
-
-@app.post("/corpus", response_model=Corpus)
-async def create_corpus(
-    corpus_input: CorpusInput,
-    service: CorpusManagementService = Depends(get_corpus_service),
-):
-    corpus = service.create_corpus(
-        name=corpus_input.name, description=corpus_input.description
-    )
-    return corpus
-
-
-@app.get("/corpus/{corpus_id}/entries", response_model=List[CorpusEntry])
-async def get_corpus_entries(
-    corpus_id: str,
-    skip: int = 0,
-    limit: int = 100,
-    service: CorpusManagementService = Depends(get_corpus_service),
-):
-    return service.get_corpus_entries(corpus_id=corpus_id, skip=skip, limit=limit)
-
-
-@app.post("/corpus/{corpus_id}/entry", response_model=CorpusEntry)
-async def add_corpus_entry(
-    corpus_id: str,
-    entry_input: CorpusEntryInput,
-    service: CorpusManagementService = Depends(get_corpus_service),
-):
-    try:
-        entry = service.add_entry_to_corpus(
-            corpus_id=corpus_id,
-            content=entry_input.content,
-            entry_type=entry_input.entry_type,
-        )
-        return entry
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/saved_models")

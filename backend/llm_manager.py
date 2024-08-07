@@ -3,10 +3,10 @@ import torch
 from torch.utils.data import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from transformers.trainer_pt_utils import LabelSmoother
-from config import settings
 from domain.corpus import CorpusEntry
 from models.error_range import ErrorRange
 from models.training_error import TrainingError
+from app.core.config import settings
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 TEMPLATE = "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' }}{% endif %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
