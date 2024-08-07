@@ -36,6 +36,23 @@ class MongoDBCorpusRepository(CorpusRepository):
         mongo_corpora = MongoCorpus.objects().skip(skip).limit(limit)
         return [self._to_domain(mc) for mc in mongo_corpora]
 
+    def count(self) -> int:
+        return MongoCorpus.objects().count()
+
+    def delete(self, corpus_id: str) -> bool:
+        result = MongoCorpus.objects(id=corpus_id).delete()
+        return result > 0
+
+    def update(self, corpus: Corpus) -> Corpus:
+        mongo_corpus = MongoCorpus.objects(id=corpus.id).first()
+        if not mongo_corpus:
+            raise ValueError(f"Corpus with id {corpus.id} not found")
+        mongo_corpus.name = corpus.name
+        mongo_corpus.description = corpus.description
+        mongo_corpus.updated_at = corpus.updated_at
+        mongo_corpus.save()
+        return self._to_domain(mongo_corpus)
+
     def _to_domain(self, mongo_corpus: MongoCorpus) -> Corpus:
         return Corpus(
             id=str(mongo_corpus.id),

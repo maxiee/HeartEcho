@@ -7,14 +7,17 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
 from database import init_db
+from domain import corpus
 from domain.corpus import Corpus, CorpusEntry
 from llm_manager import LLMManager
 
 import logging
-from config import settings
 from models.error_range import ErrorRange
 from models.training_error import TrainingError
 from repositories.corpus.mongodb_corpus_repository import MongoDBCorpusRepository
+from repositories.corpus_entry.mongodb_corpus_entry_repository import (
+    MongoDBCorpusEntryRepository,
+)
 from services.corpus_management_service import CorpusManagementService
 
 logger = logging.getLogger(__name__)
@@ -30,10 +33,17 @@ llm_manager = LLMManager()
 
 app = FastAPI()
 
+app.include_router(corpus.router, prefix="/corpus", tags=["corpus"])
+app.include_router(model.router, prefix="/model", tags=["model"])
+app.include_router(training.router, prefix="/training", tags=["training"])
+
 
 def get_corpus_service():
-    repo = MongoDBCorpusRepository(connection_string=settings.mongo_connection_string)
-    return CorpusManagementService(repo)
+    corpus_repo = MongoDBCorpusRepository(connection_string=settings.mongodb_url)
+    corpus_entry_repo = MongoDBCorpusEntryRepository(
+        connection_string=settings.mongodb_url
+    )
+    return CorpusManagementService(corpus_repo, corpus_entry_repo)
 
 
 class ChatInput(BaseModel):
@@ -43,11 +53,6 @@ class ChatInput(BaseModel):
 class LearnInput(BaseModel):
     chat: List[List[Dict[str, Any]]]
     knowledge: List[str]
-
-
-class CorpusInput(BaseModel):
-    name: str
-    description: str = ""
 
 
 class MessageInput(BaseModel):
@@ -146,69 +151,56 @@ def save_model():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/corpus")
+@app.get("/corpus", response_model=List[Corpus])
+async def get_corpora(
+    skip: int = 0,
+    limit: int = 100,
+    service: CorpusManagementService = Depends(get_corpus_service),
+):
+    return service.list_corpora(skip=skip, limit=limit)
+
+
+class CorpusInput(BaseModel):
+    name: str
+    description: str = ""
+
+
+@app.post("/corpus", response_model=Corpus)
 async def create_corpus(
     corpus_input: CorpusInput,
     service: CorpusManagementService = Depends(get_corpus_service),
 ):
-    try:
-        corpus = service.create_corpus(
-            name=corpus_input.name, description=corpus_input.description
-        )
-        return {"message": "Corpus created successfully", "id": corpus.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    corpus = service.create_corpus(
+        name=corpus_input.name, description=corpus_input.description
+    )
+    return corpus
 
 
-@app.post("/corpus/{corpus_id}/entry")
+@app.get("/corpus/{corpus_id}/entries", response_model=List[CorpusEntry])
+async def get_corpus_entries(
+    corpus_id: str,
+    skip: int = 0,
+    limit: int = 100,
+    service: CorpusManagementService = Depends(get_corpus_service),
+):
+    return service.get_corpus_entries(corpus_id=corpus_id, skip=skip, limit=limit)
+
+
+@app.post("/corpus/{corpus_id}/entry", response_model=CorpusEntry)
 async def add_corpus_entry(
     corpus_id: str,
     entry_input: CorpusEntryInput,
     service: CorpusManagementService = Depends(get_corpus_service),
 ):
     try:
-        corpus = service.add_entry_to_corpus(
-            corpus_id, content=entry_input.content, entry_type=entry_input.entry_type
+        entry = service.add_entry_to_corpus(
+            corpus_id=corpus_id,
+            content=entry_input.content,
+            entry_type=entry_input.entry_type,
         )
-        return {"message": "Entry added successfully", "corpus_id": corpus.id}
+        return entry
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/corpus")
-async def get_corpora():
-    corpora = Corpus.objects().to_json()
-    return {"corpora": corpora}
-
-
-@app.get("/corpus_entries")
-async def get_corpus_entries(
-    corpus_id: str = Query(..., description="The ID of the corpus"),
-    skip: int = Query(0, description="Number of entries to skip"),
-    limit: int = Query(100, description="Maximum number of entries to return"),
-):
-    try:
-        logger.info(f"Fetching corpus entries for corpus_id: {corpus_id}")
-        corpus = Corpus.objects(id=corpus_id).first()
-        if not corpus:
-            logger.warning(f"Corpus not found for id: {corpus_id}")
-            raise HTTPException(status_code=404, detail="Corpus not found")
-
-        total_count = CorpusEntry.objects(corpus=corpus).count()
-        entries = CorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
-
-        logger.info(f"Retrieved {len(entries)} entries for corpus_id: {corpus_id}")
-        return {
-            "total": total_count,
-            "entries": entries.to_json(),
-            "skip": skip,
-            "limit": limit,
-        }
-    except Exception as e:
-        logger.error(f"Error fetching corpus entries: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.get("/saved_models")

@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict
+
 from domain.corpus import Corpus
-from repositories.corpus.corpus_repository import CorpusRepository
+from .corpus_repository import CorpusRepository
 
 
 class MemoryCorpusRepository(CorpusRepository):
@@ -17,6 +18,9 @@ class MemoryCorpusRepository(CorpusRepository):
     def list(self, skip: int = 0, limit: int = 100) -> List[Corpus]:
         corpora_list = list(self.corpora.values())
         return corpora_list[skip : skip + limit]
+
+    def count(self) -> int:
+        return len(self.corpora)
 
     def delete(self, corpus_id: str) -> bool:
         if corpus_id in self.corpora:

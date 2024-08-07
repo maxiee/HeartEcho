@@ -17,3 +17,15 @@ class CorpusRepository(ABC):
     @abstractmethod
     def list(self, skip: int = 0, limit: int = 100) -> List[Corpus]:
         pass
+
+    @abstractmethod
+    def count(self) -> int:
+        pass
+
+    @abstractmethod
+    def delete(self, corpus_id: str) -> bool:
+        pass
+
+    @abstractmethod
+    def update(self, corpus: Corpus) -> Corpus:
+        pass

@@ -24,6 +24,12 @@ class CorpusManagementService:
         )
         return self.corpus_repo.save(corpus)
 
+    def list_corpora(self, skip: int = 0, limit: int = 100) -> List[Corpus]:
+        return self.corpus_repo.list(skip=skip, limit=limit)
+
+    def count_corpora(self) -> int:
+        return self.corpus_repo.count()
+
     def add_entry_to_corpus(
         self, corpus_id: str, content: str, entry_type: str
     ) -> CorpusEntry:
