@@ -1,4 +1,3 @@
-import os
 import random
 import torch
 from torch.utils.data import Dataset
@@ -124,12 +123,26 @@ class LLMManager:
         return "ok"
 
     def smelt_new_corpus(self, session_name, batch_size=16):
-        # Get new corpus entries
-        all_entries = CorpusEntry.objects().all()
-        trained_entries = TrainingError.objects(session=session_name).distinct(
-            "corpus_entry"
+        # Get all corpus entries
+        all_entries = set(CorpusEntry.objects().all())
+
+        # Get entries that have been trained in the database
+        trained_entries = set(
+            TrainingError.objects(session=session_name).distinct("corpus_entry")
         )
-        new_entries = list(set(all_entries) - set(trained_entries))
+
+        # Get entries that have been trained in this session (from cached_errors)
+        cached_trained_entries = set()
+        if session_name in self.cached_errors:
+            cached_trained_entries = set(
+                CorpusEntry.objects(id__in=self.cached_errors[session_name].keys())
+            )
+
+        # Combine all trained entries
+        all_trained_entries = trained_entries.union(cached_trained_entries)
+
+        # Get new entries
+        new_entries = list(all_entries - all_trained_entries)
 
         if len(new_entries) < batch_size:
             raise ValueError(
@@ -174,9 +187,9 @@ class LLMManager:
         loss = train_result.training_loss
 
         # Cache the errors
+        if session_name not in self.cached_errors:
+            self.cached_errors[session_name] = {}
         for entry in selected_entries:
-            if session_name not in self.cached_errors:
-                self.cached_errors[session_name] = {}
             self.cached_errors[session_name][str(entry.id)] = loss
 
         return {
@@ -189,20 +202,38 @@ class LLMManager:
         # Get distribution from database
         db_distribution = TrainingError.get_distribution(session_name)
 
-        # Combine with cached errors
+        # Convert db_distribution to a dictionary for easier manipulation
+        distribution_dict = {
+            str(item["_id"]): item["count"] for item in db_distribution
+        }
+
+        # Get cached errors for this session
         cached_errors = self.cached_errors.get(session_name, {})
+
+        # Process cached errors
         for entry_id, error in cached_errors.items():
             error_range = ErrorRange.get_range_for_error(error)
             if error_range:
                 range_id = str(error_range.id)
-                for item in db_distribution:
-                    if str(item["_id"]) == range_id:
-                        item["count"] += 1
-                        break
+                if range_id in distribution_dict:
+                    # If this range already exists in db_distribution, increment the count
+                    distribution_dict[range_id] += 1
                 else:
-                    db_distribution.append({"_id": range_id, "count": 1})
+                    # If this is a new range, add it to the distribution
+                    distribution_dict[range_id] = 1
 
-        return db_distribution
+        # Convert the updated distribution back to the original format
+        updated_distribution = [
+            {"_id": range_id, "count": count}
+            for range_id, count in distribution_dict.items()
+        ]
+
+        # Sort the distribution by error range
+        updated_distribution.sort(
+            key=lambda x: ErrorRange.objects(id=x["_id"]).first().lower_bound
+        )
+
+        return updated_distribution
 
     def save_model(self):
         if not self.model:
