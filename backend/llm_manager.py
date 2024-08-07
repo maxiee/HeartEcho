@@ -81,7 +81,7 @@ class LLMManager:
         model_inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
         generated_ids = self.model.generate(
             model_inputs.input_ids,
-            max_new_tokens=1024,
+            max_new_tokens=2048,
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
@@ -100,7 +100,7 @@ class LLMManager:
             entry for entry in knowledge_entries if entry.entry_type == "knowledge"
         ]
         train_dataset = HeartEchoDataset(
-            chats, knowledges, self.tokenizer, max_len=1024
+            chats, knowledges, self.tokenizer, max_len=2048
         )
 
         training_args = TrainingArguments(
@@ -149,7 +149,7 @@ class LLMManager:
 
         # Train the model
         train_dataset = HeartEchoDataset(
-            chat_entries, knowledge_entries, self.tokenizer, max_len=1024
+            chat_entries, knowledge_entries, self.tokenizer, max_len=2048
         )
 
         training_args = TrainingArguments(
