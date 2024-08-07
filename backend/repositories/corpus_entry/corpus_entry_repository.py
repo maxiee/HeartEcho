@@ -14,7 +14,7 @@ class CorpusEntryRepository(ABC):
 
     @abstractmethod
     def list_by_corpus(
-        self, corpus_id: str, skip: int = 0, limit: int = 100
+        self, corpus: str, skip: int = 0, limit: int = 100
     ) -> List[CorpusEntry]:
         pass
 

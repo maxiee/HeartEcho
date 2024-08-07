@@ -6,12 +6,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
-from domain.corpus import Corpus, CorpusEntry
+from app.core.dependencies import get_training_session_service
+from domain.corpus import CorpusEntry
 from llm_manager import LLMManager
 
 import logging
-from models.error_range import ErrorRange
-from models.training_error import TrainingError
 from repositories.corpus.mongodb_corpus_repository import MongoDBCorpusRepository
 from repositories.corpus_entry.mongodb_corpus_entry_repository import (
     MongoDBCorpusEntryRepository,
@@ -23,13 +22,12 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Ensure ErrorRanges exist
-ErrorRange.initialize()
-
 # Initialize LLMManager
-llm_manager = LLMManager()
+llm_manager = LLMManager(get_training_session_service())
 
 app = FastAPI()
+
+print(corpus_routes.router.routes)
 
 app.include_router(corpus_routes.router, prefix="/corpus", tags=["corpus"])
 app.include_router(sessions_routes.router, prefix="/sessions", tags=["sessions"])
@@ -90,31 +88,6 @@ class CorpusEntryInput(BaseModel):
                 ],
             }
         }
-
-
-@app.middleware("http")
-async def log_responses(request: Request, call_next):
-    print("---")
-    print(f"start Endpoint: {request.url.path}")
-
-    response = await call_next(request)
-
-    response_body = b""
-    async for chunk in response.body_iterator:
-        response_body += chunk
-
-    # Reconstruct the response
-    response = JSONResponse(
-        content=json.loads(response_body),
-        status_code=response.status_code,
-        headers=dict(response.headers),
-    )
-
-    print(f"Endpoint: {request.url.path}")
-    print(f"Response: {response_body.decode()}")
-    print("---")
-
-    return response
 
 
 @app.post("/chat")
@@ -255,6 +228,32 @@ async def get_new_corpus_entries_count(
         return {"new_entries_count": max(0, new_entries_count)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.middleware("http")
+# async def log_responses(request: Request, call_next):
+#     print("---")
+#     print(f"start Endpoint: {request.url.path}")
+
+#     response = await call_next(request)
+
+#     response_body = b""
+#     async for chunk in response.body_iterator:
+#         response_body += chunk
+
+#     print(f"raw response: {response_body}")
+#     # Reconstruct the response
+#     response = JSONResponse(
+#         content=json.loads(response_body),
+#         status_code=response.status_code,
+#         headers=dict(response.headers),
+#     )
+
+#     print(f"Endpoint: {request.url.path}")
+#     print(f"Response: {response_body.decode()}")
+#     print("---")
+
+#     return response
 
 
 if __name__ == "__main__":

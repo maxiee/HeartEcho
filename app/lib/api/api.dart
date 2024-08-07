@@ -52,10 +52,10 @@ class ApiClient {
   }
 
   Future<List<dynamic>> fetchCorpora() async {
-    final response = await http.get(Uri.parse('http://localhost:1127/corpus'));
+    final response = await http.get(Uri.parse('http://localhost:1127/corpus/'));
     if (response.statusCode == 200) {
       final List<dynamic> data =
-          json.decode(json.decode(response.body)['corpora']);
+          json.decode(utf8.decode(response.bodyBytes))['items'];
       return data;
     }
     return [];
@@ -119,7 +119,7 @@ class ApiClient {
     required String description,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/corpus'),
+      Uri.parse('$baseUrl/corpus/'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'name': name, 'description': description}),
     );

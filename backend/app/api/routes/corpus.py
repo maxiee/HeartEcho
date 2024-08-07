@@ -8,6 +8,7 @@ from app.schemas.corpus import (
     CorpusEntryCreate,
     CorpusEntryResponse,
 )
+from services.corpus_management_service import CorpusManagementService
 
 router = APIRouter()
 
@@ -24,6 +25,7 @@ async def create_corpus(corpus: CorpusCreate, service=Depends(get_corpus_service
 async def get_corpora(
     skip: int = 0, limit: int = 100, service=Depends(get_corpus_service)
 ):
+    print("get_corpora")
     corpora = service.list_corpora(skip=skip, limit=limit)
     total = service.count_corpora()
     return CorpusListResponse(
@@ -34,7 +36,7 @@ async def get_corpora(
     )
 
 
-@router.post("/{corpus_id}/entry", response_model=CorpusEntryResponse)
+@router.post("/entry", response_model=CorpusEntryResponse)
 async def add_corpus_entry(
     corpus_id: str, entry: CorpusEntryCreate, service=Depends(get_corpus_service)
 ):
@@ -47,9 +49,13 @@ async def add_corpus_entry(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{corpus_id}/entries", response_model=List[CorpusEntryResponse])
+@router.get("/entries", response_model=List[CorpusEntryResponse])
 async def get_corpus_entries(
-    corpus_id: str, skip: int = 0, limit: int = 100, service=Depends(get_corpus_service)
+    corpus: str,
+    skip: int = 0,
+    limit: int = 100,
+    service: CorpusManagementService = Depends(get_corpus_service),
 ):
-    entries = service.get_corpus_entries(corpus_id=corpus_id, skip=skip, limit=limit)
+    print("get_corpus_entries")
+    entries = service.get_corpus_entries(corpus=corpus, skip=skip, limit=limit)
     return [CorpusEntryResponse(**entry.__dict__) for entry in entries]

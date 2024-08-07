@@ -13,7 +13,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
     def test_get_by_id(self):
         entry = CorpusEntry(
             id="1",
-            corpus_id="corpus1",
+            corpus="corpus1",
             content="Test content",
             entry_type="knowledge",
             created_at=datetime.now(),
@@ -30,7 +30,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
     def test_save(self):
         entry = CorpusEntry(
             id="1",
-            corpus_id="corpus1",
+            corpus="corpus1",
             content="Test content",
             entry_type="knowledge",
             created_at=datetime.now(),
@@ -44,7 +44,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
         entries = [
             CorpusEntry(
                 id=f"{i}",
-                corpus_id="corpus1",
+                corpus="corpus1",
                 content=f"Content {i}",
                 entry_type="knowledge",
                 created_at=datetime.now(),
@@ -59,7 +59,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
         self.repo.save(
             CorpusEntry(
                 id="6",
-                corpus_id="corpus2",
+                corpus="corpus2",
                 content="Other corpus content",
                 entry_type="chat",
                 created_at=datetime.now(),
@@ -77,7 +77,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
         entries = [
             CorpusEntry(
                 id=f"{i}",
-                corpus_id="corpus1",
+                corpus="corpus1",
                 content=f"Content {i}",
                 entry_type="knowledge",
                 created_at=datetime.now(),
@@ -95,7 +95,7 @@ class TestCorpusEntryRepository(unittest.TestCase):
     def test_delete(self):
         entry = CorpusEntry(
             id="1",
-            corpus_id="corpus1",
+            corpus="corpus1",
             content="Test content",
             entry_type="knowledge",
             created_at=datetime.now(),

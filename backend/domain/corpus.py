@@ -8,7 +8,7 @@ class CorpusEntry:
     """表示单个语料条目，可以是对话或知识。"""
 
     id: str
-    corpus_id: str
+    corpus: str
     content: str
     entry_type: str  # 'chat' or 'knowledge'
     created_at: datetime

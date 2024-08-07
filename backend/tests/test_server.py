@@ -47,7 +47,7 @@ def test_create_corpus(test_client, mock_corpus_service):
 def test_add_corpus_entry(test_client, mock_corpus_service):
     mock_entry = CorpusEntry(
         id="1",
-        corpus_id="1",
+        corpus="1",
         content="Test Content",
         entry_type="knowledge",
         created_at=None,

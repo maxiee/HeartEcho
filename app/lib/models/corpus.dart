@@ -12,7 +12,7 @@ class Corpus {
 
   factory Corpus.fromJson(Map<String, dynamic> json) {
     return Corpus(
-      id: json['_id']['\$oid'],
+      id: json['id'],
       name: json['name'],
       description: json['description'],
     );

@@ -40,7 +40,7 @@ class CorpusManagementService:
             raise ValueError(f"Corpus with id {corpus_id} does not exist")
         entry = CorpusEntry(
             id=IdGenerator.generate(),
-            corpus_id=corpus_id,
+            corpus=corpus_id,
             content=content,
             entry_type=entry_type,
             created_at=datetime.now(),
@@ -53,7 +53,7 @@ class CorpusManagementService:
         return self.corpus_entry_repo.delete(entry_id)
 
     def get_corpus_entries(
-        self, corpus_id: str, skip: int = 0, limit: int = 100
+        self, corpus: str, skip: int = 0, limit: int = 100
     ) -> List[CorpusEntry]:
         """获取语料库中的条目列表。"""
-        return self.corpus_entry_repo.list_by_corpus(corpus_id, skip, limit)
+        return self.corpus_entry_repo.list_by_corpus(corpus, skip, limit)

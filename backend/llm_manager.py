@@ -4,8 +4,7 @@ from torch.utils.data import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from transformers.trainer_pt_utils import LabelSmoother
 from domain.corpus import CorpusEntry
-from models.error_range import ErrorRange
-from models.training_error import TrainingError
+from models.training_loss import TrainingLoss
 from app.core.config import settings
 from services.training_session_service import TrainingSessionService
 

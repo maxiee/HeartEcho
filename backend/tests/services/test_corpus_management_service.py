@@ -27,13 +27,13 @@ class TestCorpusManagementService(unittest.TestCase):
         corpus = self.service.create_corpus("Test Corpus", "Test Description")
         entry = self.service.add_entry_to_corpus(corpus.id, "Test Content", "knowledge")
         self.assertIsNotNone(entry.id)
-        self.assertEqual(entry.corpus_id, corpus.id)
+        self.assertEqual(entry.corpus, corpus.id)
         self.assertEqual(entry.content, "Test Content")
         self.assertEqual(entry.entry_type, "knowledge")
 
         # Verify the entry is saved in the repository
         saved_entry = self.corpus_entry_repo.get_by_id(entry.id)
-        self.assertEqual(saved_entry.corpus_id, corpus.id)
+        self.assertEqual(saved_entry.corpus, corpus.id)
         self.assertEqual(saved_entry.content, "Test Content")
         self.assertEqual(saved_entry.entry_type, "knowledge")
 

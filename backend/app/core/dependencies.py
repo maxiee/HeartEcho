@@ -14,11 +14,9 @@ from services.training_session_service import TrainingSessionService
 
 
 @lru_cache()
-def get_corpus_service():
-    corpus_repo = MongoDBCorpusRepository(connection_string=settings.MONGODB_URL)
-    corpus_entry_repo = MongoDBCorpusEntryRepository(
-        connection_string=settings.MONGODB_URL
-    )
+def get_corpus_service() -> CorpusManagementService:
+    corpus_repo = MongoDBCorpusRepository()
+    corpus_entry_repo = MongoDBCorpusEntryRepository()
     return CorpusManagementService(corpus_repo, corpus_entry_repo)
 
 

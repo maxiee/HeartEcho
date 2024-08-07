@@ -5,6 +5,7 @@ from mongoengine import (
     StringField,
     DateTimeField,
 )
+from app.core.db import DB
 from domain.corpus import Corpus
 from .corpus_repository import CorpusRepository
 
@@ -20,8 +21,8 @@ class MongoCorpus(Document):
 
 
 class MongoDBCorpusRepository(CorpusRepository):
-    def __init__(self, connection_string: str):
-        connect(host=connection_string)
+    def __init__(self):
+        DB.init()
 
     def get_by_id(self, corpus_id: str) -> Optional[Corpus]:
         mongo_corpus = MongoCorpus.objects(id=corpus_id).first()
@@ -64,7 +65,7 @@ class MongoDBCorpusRepository(CorpusRepository):
 
     def _to_mongo(self, corpus: Corpus) -> MongoCorpus:
         return MongoCorpus(
-            _id=corpus.id,
+            id=corpus.id,
             name=corpus.name,
             description=corpus.description,
             created_at=corpus.created_at,

@@ -1,10 +1,12 @@
 from typing import List, Optional, Dict
+from app.core.db import DB
 from domain.corpus import CorpusEntry
 from repositories.corpus_entry.corpus_entry_repository import CorpusEntryRepository
 
 
 class MemoryCorpusEntryRepository(CorpusEntryRepository):
     def __init__(self):
+        DB.init()
         self.entries: Dict[str, CorpusEntry] = {}
 
     def get_by_id(self, entry_id: str) -> Optional[CorpusEntry]:
@@ -15,10 +17,10 @@ class MemoryCorpusEntryRepository(CorpusEntryRepository):
         return entry
 
     def list_by_corpus(
-        self, corpus_id: str, skip: int = 0, limit: int = 100
+        self, corpus: str, skip: int = 0, limit: int = 100
     ) -> List[CorpusEntry]:
         corpus_entries = [
-            entry for entry in self.entries.values() if entry.corpus_id == corpus_id
+            entry for entry in self.entries.values() if entry.corpus == corpus
         ]
         return corpus_entries[skip : skip + limit]
 
