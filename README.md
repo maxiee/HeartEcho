@@ -20,6 +20,23 @@ HeartEcho 是一个创新式的大语言模型微调工具，面向个人在单�
 - 引入 mongoengine，添加语料库、语料两个 Model
 - 前端语料管理页面开发
 
+## 开发要点
+
+基于我们的对话和已有的要点，我整合并更新了以下关键信息：
+
+1. HeartEcho: 创新大语言模型微调工具，单显卡增量微调。
+2. 目标: 长时间连续训练，个人定制大模型。
+3. 重构: Corpus 和 CorpusEntry 完全分离，独立领域模型和仓库。
+4. 原因: 提高系统灵活性，优化性能，改善可维护性。
+5. 修改: CorpusEntry 通过 corpus_id 引用 Corpus，不再嵌入。
+6. 更新: 新增 CorpusEntryRepository 接口及 MongoDB 实现。
+7. 优化: CorpusManagementService 使用独立 Corpus 和 CorpusEntry 仓库。
+8. 数据模型: MongoCorpus 和 MongoCorpusEntry 分离，对应领域模型变化。
+9. 方法更新: list_by_corpus 替代 get_entries，支持高效分页查询。
+10. 转换逻辑: 添加\_to_domain 和\_to_mongo 方法处理数据转换。
+11. API 适配: 需更新相关服务和 API 端点以适应新结构。
+12. 数据迁移: 考虑现有数据向新结构转换的策略。
+
 ## 开始使用
 
 1. 克隆仓库到本地。

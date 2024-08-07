@@ -1,19 +1,21 @@
 import json
 import os
 import time
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
 from database import init_db
+from domain.corpus import Corpus, CorpusEntry
 from llm_manager import LLMManager
-from models.corpus import Corpus
-from models.corpus_entry import CorpusEntry
+
 import logging
 from config import settings
 from models.error_range import ErrorRange
 from models.training_error import TrainingError
+from repositories.corpus.mongodb_corpus_repository import MongoDBCorpusRepository
+from services.corpus_management_service import CorpusManagementService
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,11 @@ ErrorRange.initialize()
 llm_manager = LLMManager()
 
 app = FastAPI()
+
+
+def get_corpus_service():
+    repo = MongoDBCorpusRepository(connection_string=settings.mongo_connection_string)
+    return CorpusManagementService(repo)
 
 
 class ChatInput(BaseModel):
@@ -140,41 +147,34 @@ def save_model():
 
 
 @app.post("/corpus")
-async def create_corpus(corpus_input: CorpusInput):
+async def create_corpus(
+    corpus_input: CorpusInput,
+    service: CorpusManagementService = Depends(get_corpus_service),
+):
     try:
-        corpus = Corpus(name=corpus_input.name, description=corpus_input.description)
-        corpus.save()
-        return {"message": "Corpus created successfully", "id": str(corpus.id)}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@app.post("/corpus_entry")
-async def create_corpus_entry(corpus_entry_input: CorpusEntryInput):
-    try:
-        corpus = Corpus.objects(name=corpus_entry_input.corpus_name).first()
-        if not corpus:
-            raise HTTPException(status_code=404, detail="Corpus not found")
-
-        corpus_entry = CorpusEntry(
-            entry_type=corpus_entry_input.entry_type,
-            corpus=corpus,
+        corpus = service.create_corpus(
+            name=corpus_input.name, description=corpus_input.description
         )
-
-        if corpus_entry_input.entry_type == "chat":
-            corpus_entry.messages = corpus_entry_input.messages
-        else:
-            corpus_entry.content = corpus_entry_input.content
-
-        corpus_entry.save()
-        corpus.update_timestamp()
-
-        return {
-            "message": "corpus_entry created successfully",
-            "id": str(corpus_entry.id),
-        }
+        return {"message": "Corpus created successfully", "id": corpus.id}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/corpus/{corpus_id}/entry")
+async def add_corpus_entry(
+    corpus_id: str,
+    entry_input: CorpusEntryInput,
+    service: CorpusManagementService = Depends(get_corpus_service),
+):
+    try:
+        corpus = service.add_entry_to_corpus(
+            corpus_id, content=entry_input.content, entry_type=entry_input.entry_type
+        )
+        return {"message": "Entry added successfully", "corpus_id": corpus.id}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/corpus")
