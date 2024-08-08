@@ -23,7 +23,6 @@ class _TrainPageContent extends StatefulWidget {
 
 class _TrainPageContentState extends State<_TrainPageContent> {
   List<String> savedModels = [];
-  bool isLoading = true;
   String? selectedModel;
   bool isSmeltingInProgress = false;
 
@@ -31,7 +30,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+      // _loadData();
     });
   }
 
@@ -70,36 +69,32 @@ class _TrainPageContentState extends State<_TrainPageContent> {
             ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        'Active session: ${globalSessionProvider.currentSession?.name}'),
-                    const SizedBox(height: 20),
-                    ErrorDistributionChart(
-                        sessionName:
-                            globalSessionProvider.currentSession!.name),
-                    newCorpusEntriesProvider.isLoading
-                        ? const CircularProgressIndicator()
-                        : Text(
-                            'New corpus entries: ${newCorpusEntriesProvider.count}'),
-                    const SizedBox(height: 20),
-                    SkillCard(
-                      title: 'New Corpus Smelting',
-                      description:
-                          'Train the model with a batch of new corpus entries.',
-                      onActivate: () => _smeltNewCorpus(context),
-                      isActive: isSmeltingInProgress,
-                    ),
-                  ],
-                ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  'Active session: ${globalSessionProvider.currentSession?.name}'),
+              const SizedBox(height: 20),
+              // ErrorDistributionChart(
+              //     sessionName: globalSessionProvider.currentSession!.name),
+              // newCorpusEntriesProvider.isLoading
+              //     ? const CircularProgressIndicator()
+              //     : Text(
+              //         'New corpus entries: ${newCorpusEntriesProvider.count}'),
+              const SizedBox(height: 20),
+              SkillCard(
+                title: '熔炼新语料',
+                description: '使用 1x batch 新语料训练模型',
+                onActivate: () => _smeltNewCorpus(context),
+                isActive: isSmeltingInProgress,
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
