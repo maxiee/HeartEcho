@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Optional
 from domain.corpus import Corpus, CorpusEntry
 from repositories.corpus.corpus_repository import CorpusRepository
 from repositories.corpus_entry.corpus_entry_repository import CorpusEntryRepository
@@ -31,17 +31,28 @@ class CorpusManagementService:
         return self.corpus_repo.count()
 
     def add_entry_to_corpus(
-        self, corpus_id: str, content: str, entry_type: str
+        self,
+        corpus_id: str,
+        entry_type: str,
+        content: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
     ) -> CorpusEntry:
-        """向语料库中添加一个新的条目。"""
-        # 首先检查语料库是否存在
+        """Add a new entry to the corpus."""
         corpus = self.corpus_repo.get_by_id(corpus_id)
         if not corpus:
             raise ValueError(f"Corpus with id {corpus_id} does not exist")
+
+        if entry_type == "knowledge" and content is None:
+            raise ValueError("Content is required for knowledge entry type")
+
+        if entry_type == "chat" and messages is None:
+            raise ValueError("Messages are required for chat entry type")
+
         entry = CorpusEntry(
             id=IdGenerator.generate(),
             corpus=corpus_id,
-            content=content,
+            content=content if entry_type == "knowledge" else None,
+            messages=messages if entry_type == "chat" else None,
             entry_type=entry_type,
             created_at=datetime.now(),
             metadata={},

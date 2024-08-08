@@ -40,6 +40,22 @@ class TestCorpusEntryRepository(unittest.TestCase):
         self.assertEqual(result, entry)
         self.assertEqual(self.repo.get_by_id("1"), entry)
 
+    def test_save_chat_entry(self):
+        chat_entry = CorpusEntry(
+            id="chat1",
+            corpus="corpus1",
+            messages=[
+                {"role": "user", "content": "Hello"},
+                {"role": "assistant", "content": "Hi there!"},
+            ],
+            entry_type="chat",
+            created_at=datetime.now(),
+            metadata={},
+        )
+        result = self.repo.save(chat_entry)
+        self.assertEqual(result, chat_entry)
+        self.assertEqual(self.repo.get_by_id("chat1"), chat_entry)
+
     def test_list_by_corpus(self):
         entries = [
             CorpusEntry(
@@ -55,12 +71,15 @@ class TestCorpusEntryRepository(unittest.TestCase):
         for entry in entries:
             self.repo.save(entry)
 
-        # Add an entry from a different corpus
+        # Add an entry from a different corpus (chat type)
         self.repo.save(
             CorpusEntry(
                 id="6",
                 corpus="corpus2",
-                content="Other corpus content",
+                messages=[
+                    {"role": "user", "content": "Hello"},
+                    {"role": "assistant", "content": "Hi there!"},
+                ],
                 entry_type="chat",
                 created_at=datetime.now(),
                 metadata={},

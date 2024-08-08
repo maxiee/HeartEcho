@@ -38,6 +38,14 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
     def save(self, entry: CorpusEntry) -> CorpusEntry:
         mongo_entry = self._to_mongo(entry)
         mongo_entry.save()
+        try:
+            mongo_entry.save()
+        except Exception as e:
+            if "duplicate key error" in str(e):
+                raise ValueError(
+                    f"A corpus entry with SHA256 {entry.sha256} already exists."
+                )
+            raise
         return self._to_domain(mongo_entry)
 
     def list_by_corpus(
@@ -54,8 +62,11 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
     def _to_domain(self, mongo_entry: MongoCorpusEntry) -> CorpusEntry:
         return CorpusEntry(
             id=mongo_entry.id,
-            corpus=mongo_entry.corpus_id,
-            content=mongo_entry.content,
+            corpus=mongo_entry.corpus,
+            content=(
+                mongo_entry.content if mongo_entry.entry_type == "knowledge" else None
+            ),
+            messages=mongo_entry.messages if mongo_entry.entry_type == "chat" else None,
             entry_type=mongo_entry.entry_type,
             created_at=mongo_entry.created_at,
             metadata=mongo_entry.metadata,
@@ -64,9 +75,11 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
     def _to_mongo(self, entry: CorpusEntry) -> MongoCorpusEntry:
         return MongoCorpusEntry(
             id=entry.id,
-            corpus_id=entry.corpus,
-            content=entry.content,
+            corpus=entry.corpus,
+            content=entry.content if entry.entry_type == "knowledge" else None,
+            messages=entry.messages if entry.entry_type == "chat" else None,
             entry_type=entry.entry_type,
             created_at=entry.created_at,
             metadata=entry.metadata,
+            sha256=entry.sha256,
         )

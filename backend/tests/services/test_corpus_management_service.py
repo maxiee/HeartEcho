@@ -1,4 +1,6 @@
 import unittest
+
+import pytest
 from repositories.corpus.memory_corpus_repository import MemoryCorpusRepository
 from repositories.corpus_entry.memory_corpus_entry_repository import (
     MemoryCorpusEntryRepository,
@@ -25,7 +27,7 @@ class TestCorpusManagementService(unittest.TestCase):
 
     def test_add_entry_to_corpus(self):
         corpus = self.service.create_corpus("Test Corpus", "Test Description")
-        entry = self.service.add_entry_to_corpus(corpus.id, "Test Content", "knowledge")
+        entry = self.service.add_entry_to_corpus(corpus.id, "knowledge", "Test Content")
         self.assertIsNotNone(entry.id)
         self.assertEqual(entry.corpus, corpus.id)
         self.assertEqual(entry.content, "Test Content")
@@ -37,10 +39,49 @@ class TestCorpusManagementService(unittest.TestCase):
         self.assertEqual(saved_entry.content, "Test Content")
         self.assertEqual(saved_entry.entry_type, "knowledge")
 
-    def test_add_entry_to_non_existent_corpus(self):
-        with self.assertRaises(ValueError):
+    def test_add_knowledge_entry_to_corpus(self):
+        corpus = self.service.create_corpus("Test Corpus", "Test Description")
+        content = "This is a test knowledge entry."
+        entry = self.service.add_entry_to_corpus(
+            corpus_id=corpus.id, entry_type="knowledge", content=content
+        )
+        self.assertIsNotNone(entry.id)
+        self.assertEqual(entry.corpus, corpus.id)
+        self.assertEqual(entry.entry_type, "knowledge")
+        self.assertEqual(entry.content, content)
+        self.assertIsNone(entry.messages)
+
+    def test_add_chat_entry_to_corpus(self):
+        corpus = self.service.create_corpus("Test Corpus", "Test Description")
+        messages = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"},
+        ]
+        entry = self.service.add_entry_to_corpus(
+            corpus.id, entry_type="chat", messages=messages
+        )
+        self.assertIsNotNone(entry.id)
+        self.assertEqual(entry.corpus, corpus.id)
+        self.assertEqual(entry.entry_type, "chat")
+        self.assertEqual(entry.messages, messages)
+        self.assertIsNone(entry.content)
+
+    def test_add_duplicate_entry_to_corpus(self):
+        corpus = self.service.create_corpus("Test Corpus", "Test Description")
+        self.service.add_entry_to_corpus(
+            corpus.id, entry_type="knowledge", content="Duplicate content"
+        )
+        with pytest.raises(
+            ValueError, match="A duplicate entry already exists in the corpus"
+        ):
             self.service.add_entry_to_corpus(
-                "non_existent_corpus_id", "Test Content", "knowledge"
+                corpus.id, entry_type="knowledge", content="Duplicate content"
+            )
+
+    def test_add_entry_to_non_existent_corpus(service):
+        with pytest.raises(ValueError, match="Corpus with id .* does not exist"):
+            service.add_entry_to_corpus(
+                "non_existent_corpus_id", entry_type="knowledge", content="Test content"
             )
 
     def test_remove_entry_from_corpus(self):
