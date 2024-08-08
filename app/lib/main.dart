@@ -2,6 +2,7 @@ import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
 import 'package:app/pages/corpus/corpus_management_page.dart';
+import 'package:app/pages/launch/launch_page.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:app/pages/train/train_page.dart';
 import 'package:app/providers/batch_provider.dart';
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'HeartEcho'),
     );
   }
 }
@@ -45,15 +46,28 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool _sessionStarted = false;
+
+  void _onSessionStart() {
+    setState(() {
+      _sessionStarted = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!_sessionStarted) {
+      return LaunchPage(onSessionStart: _onSessionStart);
+    }
+
     return Scaffold(
-        body: Column(
-      children: [
-        const GlobalTitlebar(),
-        Expanded(child: getPage(context)),
-      ],
-    ));
+      body: Column(
+        children: [
+          const GlobalTitlebar(),
+          Expanded(child: getPage(context)),
+        ],
+      ),
+    );
   }
 
   getPage(BuildContext context) {
