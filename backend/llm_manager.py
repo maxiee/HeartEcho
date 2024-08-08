@@ -1,12 +1,13 @@
+import os
 import random
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from transformers.trainer_pt_utils import LabelSmoother
 from domain.corpus import CorpusEntry
+from domain.training_session import TrainingSession
 from models.training_loss import TrainingLoss
 from app.core.config import settings
-from services.training_session_service import TrainingSessionService
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 TEMPLATE = "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' }}{% endif %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
@@ -45,12 +46,11 @@ class HeartEchoDataset(Dataset):
 
 
 class LLMManager:
-    def __init__(self, training_session_service: TrainingSessionService):
+    def __init__(self):
         self.model = None
         self.tokenizer = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.cached_errors = {}
-        self.training_session_service = training_session_service
 
     def load_model(self, model_path):
         print(f"Loading model from {model_path}")
@@ -249,15 +249,12 @@ class LLMManager:
 
         return updated_distribution
 
-    def save_model(self):
-        current_session = self.training_session_service.get_current_session()
-        if not current_session:
-            raise ValueError("No active training session")
-
+    def save_model(self, session: TrainingSession):
         if not self.model:
             raise ValueError("Model not loaded. Call load_model() first.")
 
-        # TODO fixme: save the model to the session
-        self.model.save_pretrained(settings.model_dir)
-        self.tokenizer.save_pretrained(settings.model_dir)
+        model_dir = os.path.join(settings.model_dir, session.name)
+
+        self.model.save_pretrained(model_dir)
+        self.tokenizer.save_pretrained(model_dir)
         return True

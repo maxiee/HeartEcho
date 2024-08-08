@@ -41,7 +41,7 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
         self._save_session_info(session)
         return session
 
-    def list_active_sessions(self) -> List[TrainingSession]:
+    def list_sessions(self) -> List[TrainingSession]:
         active_sessions = []
         for session_name in os.listdir(self.base_path):
             session_path = os.path.join(self.base_path, session_name)
@@ -75,14 +75,7 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
         info = {
             "id": session.id,
             "name": session.name,
-            "model": {
-                "id": session.model.id,
-                "name": session.model.name,
-                "base_model": session.model.base_model,
-                "parameters": session.model.parameters,
-                "created_at": session.model.created_at.isoformat(),
-                "updated_at": session.model.updated_at.isoformat(),
-            },
+            "base_model": session.base_model,
             "start_time": session.start_time.isoformat(),
             "last_trained": session.last_trained.isoformat(),
             "metrics": session.metrics,
@@ -94,7 +87,7 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
         return TrainingSession(
             id=info["id"],
             name=info["name"],
-            model=info["base_model"],
+            base_model=info["base_model"],
             start_time=datetime.fromisoformat(info["start_time"]),
             last_trained=datetime.fromisoformat(info["last_trained"]),
             metrics=info["metrics"],

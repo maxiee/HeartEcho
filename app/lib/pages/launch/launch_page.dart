@@ -85,12 +85,13 @@ class _LaunchPageState extends State<LaunchPage> {
       isLoading = true;
     });
     try {
-      await API.loadExistingModel(selectedSession!.name);
+      final TrainingSession loadedSession =
+          await API.loadTrainingSession(selectedSession!.id);
       if (context.mounted) {
         final globalSessionProvider =
             // ignore: use_build_context_synchronously
             Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
-        globalSessionProvider.startSession(selectedSession!);
+        globalSessionProvider.startSession(loadedSession);
         widget.onSessionStart();
       }
     } catch (e) {

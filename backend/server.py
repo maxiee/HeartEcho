@@ -22,9 +22,6 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Initialize LLMManager
-llm_manager = LLMManager(get_training_session_service())
-
 app = FastAPI()
 
 print(corpus_routes.router.routes)

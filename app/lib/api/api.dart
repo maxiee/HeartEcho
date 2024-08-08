@@ -139,10 +139,9 @@ class ApiClient {
     }
   }
 
-  Future<List<TrainingSession>> listSessions(
-      {int skip = 0, int limit = 100}) async {
+  Future<List<TrainingSession>> listSessions() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/sessions/list?skip=$skip&limit=$limit'),
+      Uri.parse('$baseUrl/sessions/list'),
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -184,14 +183,15 @@ class ApiClient {
     }
   }
 
-  Future<void> loadExistingModel(String modelName) async {
+  Future<TrainingSession> loadTrainingSession(String sessionId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/load_model'),
+      Uri.parse('$baseUrl/sessions/load/$sessionId'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'model_name': modelName}),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load model: ${response.body}');
+    if (response.statusCode == 200) {
+      return TrainingSession.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load training session: ${response.body}');
     }
   }
 

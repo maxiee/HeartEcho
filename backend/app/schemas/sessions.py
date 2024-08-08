@@ -7,7 +7,7 @@ from domain.training_session import TrainingSession
 
 class TrainingSessionCreate(BaseModel):
     name: str
-    model_id: str
+    base_model: str
 
 
 class TrainingSessionResponse(BaseModel):
@@ -16,7 +16,7 @@ class TrainingSessionResponse(BaseModel):
     base_model: str
     start_time: datetime
     last_trained: datetime
-    end_time: Optional[datetime] = None
+    last_trained: Optional[datetime] = None
     metrics: dict
 
     @classmethod
@@ -27,7 +27,5 @@ class TrainingSessionResponse(BaseModel):
             base_model=session.base_model,
             start_time=session.start_time,
             last_trained=session.last_trained,
-            end_time=session.end_time,
             metrics=session.metrics,
-            checkpoints=session.checkpoints,
         )

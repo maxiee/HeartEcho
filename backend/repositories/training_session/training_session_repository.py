@@ -17,7 +17,7 @@ class TrainingSessionRepository(ABC):
         pass
 
     @abstractmethod
-    def list_active_sessions(self) -> List[TrainingSession]:
+    def list_sessions(self) -> List[TrainingSession]:
         pass
 
     @abstractmethod

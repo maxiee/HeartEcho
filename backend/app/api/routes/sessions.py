@@ -20,6 +20,18 @@ async def create_training_session(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/load/{session_id}", response_model=TrainingSessionResponse)
+async def load_training_session(
+    session_id: str,
+    service: TrainingSessionService = Depends(get_training_session_service),
+):
+    try:
+        loaded_session = service.load_session(session_id)
+        return TrainingSessionResponse.from_domain(loaded_session)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/current", response_model=TrainingSessionResponse)
 async def get_current_session(
     service: TrainingSessionService = Depends(get_training_session_service),
@@ -52,9 +64,7 @@ async def update_session_metrics(
 
 @router.get("/list", response_model=list[TrainingSessionResponse])
 async def list_sessions(
-    skip: int = 0,
-    limit: int = 100,
     service: TrainingSessionService = Depends(get_training_session_service),
 ):
-    sessions = service.list_sessions(skip, limit)
+    sessions = service.list_sessions()
     return [TrainingSessionResponse.from_domain(session) for session in sessions]

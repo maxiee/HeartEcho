@@ -1,3 +1,4 @@
+import 'package:app/models/training_session.dart';
 import 'package:app/pages/train/components/error_distribution_chart.dart';
 import 'package:app/pages/train/components/skill_card.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
@@ -152,7 +153,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                         onPressed: globalSessionProvider.isSessionActive ||
                                 selectedModel == null
                             ? null
-                            : () => _loadExistingModel(context),
+                            : () => _loadTrainingSession(context),
                         child: const Text('Load Selected Model'),
                       ),
                     ],
@@ -221,12 +222,13 @@ class _TrainPageContentState extends State<_TrainPageContent> {
     }
   }
 
-  Future<void> _loadExistingModel(BuildContext context) async {
+  Future<void> _loadTrainingSession(BuildContext context) async {
     final globalSessionProvider =
         Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
     try {
-      await API.loadExistingModel(selectedModel!);
-      globalSessionProvider.startSession(selectedModel!);
+      final TrainingSession loadedSession = await API
+          .loadTrainingSession(globalSessionProvider.currentSession!.id);
+      globalSessionProvider.startSession(loadedSession);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Model $selectedModel loaded successfully')),
