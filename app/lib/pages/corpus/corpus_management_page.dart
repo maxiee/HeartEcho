@@ -179,9 +179,7 @@ class _CorpusDetailPageState extends State<CorpusDetailPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
           }
-          final entriesData = snapshot.data as List<dynamic>;
-          final entries =
-              entriesData.map((data) => CorpusEntry.fromJson(data)).toList();
+          final entries = snapshot.data as List<CorpusEntry>;
           return ListView.separated(
             itemCount: entries.length,
             itemBuilder: (context, index) {

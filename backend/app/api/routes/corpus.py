@@ -58,4 +58,16 @@ async def get_corpus_entries(
 ):
     print("get_corpus_entries")
     entries = service.get_corpus_entries(corpus=corpus, skip=skip, limit=limit)
-    return [CorpusEntryResponse(**entry.__dict__) for entry in entries]
+    return [
+        CorpusEntryResponse(
+            id=entry.id,
+            corpus=entry.corpus,
+            entry_type=entry.entry_type,
+            created_at=entry.created_at,
+            content=entry.content,
+            messages=entry.messages,
+            metadata=entry.metadata,
+            sha256=entry.sha256,
+        )
+        for entry in entries
+    ]

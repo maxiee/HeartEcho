@@ -96,7 +96,7 @@ class _LearnChatPageState extends State<LearnChatPage> {
   void _saveEntry(BuildContext context) async {
     try {
       final Map<String, dynamic> data = {
-        'corpus_name': widget.corpus.name,
+        'corpus_id': widget.corpus.id,
         'entry_type': 'chat',
         'messages': messages,
       };

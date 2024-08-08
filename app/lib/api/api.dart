@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/models/chat.dart';
+import 'package:app/models/corpus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -67,18 +68,18 @@ class ApiClient {
     int limit = 100,
   }) async {
     final queryParameters = {
-      'corpus_id': corpusId,
+      'corpus': corpusId,
       'skip': skip.toString(),
       'limit': limit.toString(),
     };
 
-    final uri = Uri.parse('$baseUrl/corpus_entries')
+    final uri = Uri.parse('$baseUrl/corpus/entries')
         .replace(queryParameters: queryParameters);
 
     final response = await http.get(uri);
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return json.decode(data['entries']);
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      return data.map((item) => CorpusEntry.fromJson(item)).toList();
     } else {
       throw Exception('Failed to fetch corpus entries: ${response.statusCode}');
     }
@@ -86,10 +87,16 @@ class ApiClient {
 
   Future<Map<String, dynamic>> createCorpusEntry(
       Map<String, dynamic> data) async {
+    final String corpusId =
+        data['corpus_id']; // Assuming 'corpus_name' is actually the corpus ID
     final response = await http.post(
-      Uri.parse('$baseUrl/corpus_entry'),
+      Uri.parse('$baseUrl/corpus/entry?corpus_id=$corpusId'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(data),
+      body: json.encode({
+        'entry_type': data['entry_type'],
+        'content': data['content'],
+        'messages': data['messages'],
+      }),
     );
 
     if (response.statusCode == 200) {

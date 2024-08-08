@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Dict, Optional, List
 from datetime import datetime
 
 
@@ -37,11 +37,15 @@ class CorpusEntryCreate(CorpusEntryBase):
     pass
 
 
-class CorpusEntryResponse(CorpusEntryBase):
+class CorpusEntryResponse(BaseModel):
     id: str
-    corpus_id: str
+    corpus: str
+    entry_type: str
     created_at: datetime
+    content: Optional[str] = None
+    messages: Optional[List[Dict[str, str]]] = None
     metadata: dict = {}
+    sha256: str
 
     class Config:
         orm_mode = True

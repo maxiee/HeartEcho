@@ -5,7 +5,6 @@ from mongoengine import (
     StringField,
     DateTimeField,
     DictField,
-    ReferenceField,
     ListField,
 )
 from app.core.db import DB
@@ -22,6 +21,7 @@ class MongoCorpusEntry(Document):
     metadata = DictField()
     content = StringField()  # For 'knowledge' type
     messages = ListField(DictField(), default=list)  # For 'chat' type
+    sha256 = StringField(unique=True)
 
     meta = {"collection": "corpus_entries"}
 

@@ -55,7 +55,7 @@ class _LearnKnowledgePageState extends State<LearnKnowledgePage> {
   void _saveEntry(BuildContext context) async {
     try {
       final Map<String, dynamic> data = {
-        'corpus_name': widget.corpus.name,
+        'corpus_id': widget.corpus.id,
         'entry_type': 'knowledge',
         'content': _codeController.text,
       };
