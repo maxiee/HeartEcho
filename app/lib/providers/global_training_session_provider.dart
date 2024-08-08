@@ -1,21 +1,22 @@
+import 'package:app/models/training_session.dart';
 import 'package:flutter/foundation.dart';
 
 class GlobalTrainingSessionProvider extends ChangeNotifier {
   bool _isSessionActive = false;
-  String? _currentSessionName;
+  TrainingSession? _currentSession;
 
   bool get isSessionActive => _isSessionActive;
-  String? get currentSessionName => _currentSessionName;
+  TrainingSession? get currentSession => _currentSession;
 
-  void startSession(String sessionName) {
+  void startSession(TrainingSession session) {
     _isSessionActive = true;
-    _currentSessionName = sessionName;
+    _currentSession = session;
     notifyListeners();
   }
 
   void endSession() {
     _isSessionActive = false;
-    _currentSessionName = null;
+    _currentSession = null;
     notifyListeners();
   }
 }

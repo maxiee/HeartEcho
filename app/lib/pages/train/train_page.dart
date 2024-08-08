@@ -43,7 +43,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
 
     if (sessionProvider.isSessionActive) {
       newCorpusEntriesProvider
-          .fetchNewCorpusEntriesCount(sessionProvider.currentSessionName!);
+          .fetchNewCorpusEntriesCount(sessionProvider.currentSession!);
     }
   }
 
@@ -103,11 +103,11 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                   children: [
                     if (globalSessionProvider.isSessionActive) ...[
                       Text(
-                          'Active session: ${globalSessionProvider.currentSessionName}'),
+                          'Active session: ${globalSessionProvider.currentSession?.name}'),
                       const SizedBox(height: 20),
                       ErrorDistributionChart(
                           sessionName:
-                              globalSessionProvider.currentSessionName!),
+                              globalSessionProvider.currentSession!.name),
                       newCorpusEntriesProvider.isLoading
                           ? const CircularProgressIndicator()
                           : Text(
@@ -175,7 +175,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
 
     try {
       final result =
-          await API.smeltNewCorpus(globalSessionProvider.currentSessionName!);
+          await API.smeltNewCorpus(globalSessionProvider.currentSession!.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -184,8 +184,8 @@ class _TrainPageContentState extends State<_TrainPageContent> {
         );
       }
       // Refresh the error distribution and new corpus entries count
-      await newCorpusEntriesProvider.fetchNewCorpusEntriesCount(
-          globalSessionProvider.currentSessionName!);
+      await newCorpusEntriesProvider
+          .fetchNewCorpusEntriesCount(globalSessionProvider.currentSession!);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -203,7 +203,9 @@ class _TrainPageContentState extends State<_TrainPageContent> {
     final globalSessionProvider =
         Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
     try {
-      final result = await API.createNewTrainingSession();
+      final result = await API.createNewTrainingSession(
+          'Session_${DateTime.now().millisecondsSinceEpoch}',
+          'Qwen/Qwen2-1.5B-Instruct');
       globalSessionProvider.startSession(result);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

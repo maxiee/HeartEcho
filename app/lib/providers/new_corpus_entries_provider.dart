@@ -1,3 +1,4 @@
+import 'package:app/models/training_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:app/api/api.dart';
 
@@ -8,12 +9,12 @@ class NewCorpusEntriesProvider extends ChangeNotifier {
   int get count => _count;
   bool get isLoading => _isLoading;
 
-  Future<void> fetchNewCorpusEntriesCount(String sessionName) async {
+  Future<void> fetchNewCorpusEntriesCount(TrainingSession session) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _count = await API.getNewCorpusEntriesCount(sessionName);
+      _count = await API.getNewCorpusEntriesCount(session.id);
     } catch (e) {
       debugPrint('Error fetching new corpus entries count: $e');
     } finally {

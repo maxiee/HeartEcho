@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/models/chat.dart';
 import 'package:app/models/corpus.dart';
+import 'package:app/models/training_session.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -138,6 +139,19 @@ class ApiClient {
     }
   }
 
+  Future<List<TrainingSession>> listSessions(
+      {int skip = 0, int limit = 100}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/sessions/list?skip=$skip&limit=$limit'),
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((json) => TrainingSession.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load sessions');
+    }
+  }
+
   Future<List<String>> getSavedModels() async {
     final response = await http.get(Uri.parse('$baseUrl/saved_models'));
     if (response.statusCode == 200) {
@@ -148,25 +162,25 @@ class ApiClient {
     }
   }
 
-  Future<String> createNewTrainingSession() async {
-    final client = http.Client();
-    try {
-      final response = await client.post(
-        Uri.parse('$baseUrl/create_training_session'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(minutes: 30)); // Set a 30-minute timeout
+  Future<TrainingSession> createNewTrainingSession(
+      String name, String baseModel) async {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/sessions/'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'name': name,
+            'base_model': baseModel,
+          }),
+        )
+        .timeout(const Duration(minutes: 30));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['session_name'];
-      } else {
-        throw Exception(
-            'Failed to create new training session: ${response.body}');
-      }
-    } on TimeoutException {
-      throw Exception('Operation timed out after 30 minutes');
-    } finally {
-      client.close();
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return TrainingSession.fromJson(data);
+    } else {
+      throw Exception(
+          'Failed to create new training session: ${response.body}');
     }
   }
 

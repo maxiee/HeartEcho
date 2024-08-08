@@ -1,3 +1,4 @@
+import 'package:app/models/training_session.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/api/api.dart';
@@ -13,8 +14,8 @@ class LaunchPage extends StatefulWidget {
 }
 
 class _LaunchPageState extends State<LaunchPage> {
-  String? selectedSession;
-  List<String> savedSessions = [];
+  TrainingSession? selectedSession;
+  List<TrainingSession> savedSessions = [];
   bool isLoading = false;
 
   @override
@@ -28,14 +29,13 @@ class _LaunchPageState extends State<LaunchPage> {
       isLoading = true;
     });
     try {
-      final sessions = await API.getSavedModels();
+      final sessions = await API.listSessions();
       setState(() {
         savedSessions = sessions;
         isLoading = false;
       });
     } catch (e) {
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading saved sessions: $e')),
         );
@@ -51,17 +51,18 @@ class _LaunchPageState extends State<LaunchPage> {
       isLoading = true;
     });
     try {
-      final sessionName = await API.createNewTrainingSession();
-      if (context.mounted) {
+      final sessionName = 'Session_${DateTime.now().millisecondsSinceEpoch}';
+      const baseModel = 'Qwen/Qwen2-1.5B-Instruct';
+      final TrainingSession session =
+          await API.createNewTrainingSession(sessionName, baseModel);
+      if (mounted) {
         final globalSessionProvider =
-            // ignore: use_build_context_synchronously
             Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
-        globalSessionProvider.startSession(sessionName);
+        globalSessionProvider.startSession(session);
         widget.onSessionStart();
       }
     } catch (e) {
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error starting new session: $e')),
         );
@@ -84,7 +85,7 @@ class _LaunchPageState extends State<LaunchPage> {
       isLoading = true;
     });
     try {
-      await API.loadExistingModel(selectedSession!);
+      await API.loadExistingModel(selectedSession!.name);
       if (context.mounted) {
         final globalSessionProvider =
             // ignore: use_build_context_synchronously
@@ -151,18 +152,18 @@ class _LaunchPageState extends State<LaunchPage> {
                     child: const Text('New Game'),
                   ),
                   const SizedBox(height: 24),
-                  DropdownButton<String>(
+                  DropdownButton<TrainingSession>(
                     value: selectedSession,
                     hint: const Text('Select a saved session'),
-                    items: savedSessions.map((String session) {
-                      return DropdownMenuItem<String>(
+                    items: savedSessions.map((session) {
+                      return DropdownMenuItem<TrainingSession>(
                         value: session,
-                        child: Text(session),
+                        child: Text(session.name),
                       );
                     }).toList(),
                     onChanged: isLoading
                         ? null
-                        : (String? newValue) {
+                        : (TrainingSession? newValue) {
                             setState(() {
                               selectedSession = newValue;
                             });
