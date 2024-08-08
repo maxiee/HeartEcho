@@ -12,6 +12,7 @@ class TrainingSession:
     start_time: datetime
     last_trained: datetime
     metrics: dict = field(default_factory=dict)
+    tokens_trained: int = 0
 
     def update_metrics(self, new_metrics: dict):
         self.metrics.update(new_metrics)

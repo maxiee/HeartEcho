@@ -68,3 +68,13 @@ async def list_sessions(
 ):
     sessions = service.list_sessions()
     return [TrainingSessionResponse.from_domain(session) for session in sessions]
+
+
+@router.get("/tokens_trained", response_model=int)
+async def get_tokens_trained(
+    service: TrainingSessionService = Depends(get_training_session_service),
+):
+    try:
+        return service.get_tokens_trained()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

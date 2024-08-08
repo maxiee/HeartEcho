@@ -245,6 +245,16 @@ class ApiClient {
       throw Exception('Failed to smelt new corpus: ${response.body}');
     }
   }
+
+  Future<int> getTokensTrained() async {
+    final response =
+        await http.get(Uri.parse('$baseUrl/sessions/tokens_trained'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load tokens trained');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

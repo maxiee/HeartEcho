@@ -15,11 +15,14 @@ class GlobalTitlebar extends StatefulWidget {
 class _GlobalTitlebarState extends State<GlobalTitlebar> {
   Timer? _timer;
   TrainingSession? _currentSession;
+  int _tokensTrained = 0;
 
   @override
   void initState() {
     super.initState();
     _startPolling();
+    _fetchCurrentSession();
+    _fetchTokensTrained();
   }
 
   @override
@@ -29,8 +32,10 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(
-        const Duration(seconds: 5), (_) => _fetchCurrentSession());
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchCurrentSession();
+      _fetchTokensTrained();
+    });
   }
 
   Future<void> _fetchCurrentSession() async {
@@ -42,6 +47,17 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
     } catch (e) {
       // Handle error (e.g., log it or show a snackbar)
       debugPrint('Error fetching current session: $e');
+    }
+  }
+
+  Future<void> _fetchTokensTrained() async {
+    try {
+      final tokens = await API.getTokensTrained();
+      setState(() {
+        _tokensTrained = tokens;
+      });
+    } catch (e) {
+      debugPrint('Error fetching tokens trained: $e');
     }
   }
 
@@ -140,6 +156,10 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
                 Text(
                   'Last trained: ${_formatDateTime(_currentSession!.lastTrained)}',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  'Tokens trained: $_tokensTrained',
+                  style: const TextStyle(fontSize: 12, color: Colors.blue),
                 ),
               ],
             )

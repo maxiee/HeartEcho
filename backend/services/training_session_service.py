@@ -62,3 +62,14 @@ class TrainingSessionService:
 
     def list_sessions(self) -> list[TrainingSession]:
         return self.session_repo.list_sessions()
+
+    def update_tokens_trained(self, new_tokens: int):
+        if not self.current_session:
+            raise ValueError("No active training session")
+        self.current_session.tokens_trained += new_tokens
+        self.session_repo.update(self.current_session)
+
+    def get_tokens_trained(self) -> int:
+        if not self.current_session:
+            raise ValueError("No active training session")
+        return self.current_session.tokens_trained
