@@ -30,7 +30,6 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   @override
   void initState() {
     super.initState();
-    _loadSavedModels();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -48,29 +47,6 @@ class _TrainPageContentState extends State<_TrainPageContent> {
     }
   }
 
-  Future<void> _loadSavedModels() async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final models = await API.getSavedModels();
-      setState(() {
-        savedModels = models;
-        isLoading = false;
-      });
-    } catch (e) {
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading models: $e')),
-        );
-      }
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final globalSessionProvider =
@@ -80,7 +56,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Training Lab'),
+        title: const Text('炼丹炉'),
         actions: [
           if (globalSessionProvider.isSessionActive)
             IconButton(
@@ -102,61 +78,24 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (globalSessionProvider.isSessionActive) ...[
-                      Text(
-                          'Active session: ${globalSessionProvider.currentSession?.name}'),
-                      const SizedBox(height: 20),
-                      ErrorDistributionChart(
-                          sessionName:
-                              globalSessionProvider.currentSession!.name),
-                      newCorpusEntriesProvider.isLoading
-                          ? const CircularProgressIndicator()
-                          : Text(
-                              'New corpus entries: ${newCorpusEntriesProvider.count}'),
-                      const SizedBox(height: 20),
-                      SkillCard(
-                        title: 'New Corpus Smelting',
-                        description:
-                            'Train the model with a batch of new corpus entries.',
-                        onActivate: () => _smeltNewCorpus(context),
-                        isActive: isSmeltingInProgress,
-                      ),
-                    ] else ...[
-                      ElevatedButton(
-                        onPressed: globalSessionProvider.isSessionActive
-                            ? null
-                            : () => _startNewTrainingSession(context),
-                        child: const Text('Start New Training'),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text('Or load an existing model:'),
-                      const SizedBox(height: 10),
-                      DropdownButton<String>(
-                        value: selectedModel,
-                        hint: const Text('Select a model'),
-                        items: savedModels.map((String model) {
-                          return DropdownMenuItem<String>(
-                            value: model,
-                            child: Text(model),
-                          );
-                        }).toList(),
-                        onChanged: globalSessionProvider.isSessionActive
-                            ? null
-                            : (String? newValue) {
-                                setState(() {
-                                  selectedModel = newValue;
-                                });
-                              },
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: globalSessionProvider.isSessionActive ||
-                                selectedModel == null
-                            ? null
-                            : () => _loadTrainingSession(context),
-                        child: const Text('Load Selected Model'),
-                      ),
-                    ],
+                    Text(
+                        'Active session: ${globalSessionProvider.currentSession?.name}'),
+                    const SizedBox(height: 20),
+                    ErrorDistributionChart(
+                        sessionName:
+                            globalSessionProvider.currentSession!.name),
+                    newCorpusEntriesProvider.isLoading
+                        ? const CircularProgressIndicator()
+                        : Text(
+                            'New corpus entries: ${newCorpusEntriesProvider.count}'),
+                    const SizedBox(height: 20),
+                    SkillCard(
+                      title: 'New Corpus Smelting',
+                      description:
+                          'Train the model with a batch of new corpus entries.',
+                      onActivate: () => _smeltNewCorpus(context),
+                      isActive: isSmeltingInProgress,
+                    ),
                   ],
                 ),
               ),
