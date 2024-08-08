@@ -6,7 +6,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
-from app.core.dependencies import get_training_session_service
+from app.core.dependencies import (
+    get_model_training_service,
+    get_training_session_service,
+)
 from domain.corpus import CorpusEntry
 from llm_manager import LLMManager
 
@@ -19,6 +22,8 @@ from services.corpus_management_service import CorpusManagementService
 import app.api.routes.corpus as corpus_routes
 import app.api.routes.sessions as sessions_routes
 from app.core.config import settings
+from services.model_training_service import ModelTrainingService
+from services.training_session_service import TrainingSessionService
 
 logger = logging.getLogger(__name__)
 
@@ -173,14 +178,19 @@ async def load_model(input: LoadModelInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class SmeltCorpusInput(BaseModel):
-    session: str
-
-
 @app.post("/smelt_new_corpus")
-async def smelt_new_corpus(input: SmeltCorpusInput):
+async def smelt_new_corpus(
+    model_training_service: ModelTrainingService = Depends(get_model_training_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
     try:
-        result = llm_manager.smelt_new_corpus(input.session)
+        session = training_session_service.get_current_session()
+        if not session:
+            raise HTTPException(status_code=404, detail="Training session not found")
+
+        result = model_training_service.smelt_new_corpus(session)
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

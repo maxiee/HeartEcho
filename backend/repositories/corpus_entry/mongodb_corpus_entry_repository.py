@@ -1,4 +1,5 @@
 from datetime import datetime
+import random
 from typing import List, Optional
 from mongoengine import (
     Document,
@@ -54,6 +55,36 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         print("list_by_corpus")
         mongo_entries = MongoCorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
         return [self._to_domain(me) for me in mongo_entries]
+
+    def sample_new_entries(self, batch_size: int) -> List[CorpusEntry]:
+        # Get all corpus entries
+        all_entries = set(CorpusEntry.objects().all())
+
+        # Get entries that have been trained in the database
+        # trained_entries = set(
+        #     TrainingError.objects(session=session_name).distinct("corpus_entry")
+        # )
+        trained_entries = set()
+
+        # Get entries that have been trained in this session (from cached_errors)
+        cached_trained_entries = set()
+        # if session_name in self.cached_errors:
+        #     cached_trained_entries = set(
+        #         CorpusEntry.objects(id__in=self.cached_errors[session_name].keys())
+        #     )
+
+        # Combine all trained entries
+        all_trained_entries = trained_entries.union(cached_trained_entries)
+
+        # Get new entries
+        new_entries = list(all_entries - all_trained_entries)
+
+        assert (
+            len(new_entries) >= batch_size
+        ), f"len(new_entries)={len(new_entries)} < batch_size={batch_size}"
+
+        # Randomly sample batch_size entries
+        return random.sample(new_entries, batch_size)
 
     def delete(self, entry_id: str) -> bool:
         result = MongoCorpusEntry.objects(id=entry_id).delete()

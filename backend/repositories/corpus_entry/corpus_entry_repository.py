@@ -19,5 +19,9 @@ class CorpusEntryRepository(ABC):
         pass
 
     @abstractmethod
+    def sample_new_entries(self, batch_size: int) -> List[CorpusEntry]:
+        pass
+
+    @abstractmethod
     def delete(self, entry_id: str) -> bool:
         pass

@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import List, Optional, Set
 from datetime import datetime
+from domain.corpus import CorpusEntry
 from domain.training_session import TrainingSession
 from llm_manager import LLMManager
 from repositories.training_session.training_session_repository import (

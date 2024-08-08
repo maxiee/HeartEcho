@@ -1,5 +1,6 @@
 import os
 import random
+from typing import List
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
@@ -207,6 +208,38 @@ class LLMManager:
             "loss": loss,
             "entries_trained": len(selected_entries),
         }
+
+    def train_on_entries(self, entries: List[CorpusEntry]) -> float:
+        # Prepare data for training
+        chat_entries = [entry for entry in entries if entry.entry_type == "chat"]
+        knowledge_entries = [
+            entry for entry in entries if entry.entry_type == "knowledge"
+        ]
+
+        train_dataset = HeartEchoDataset(
+            chat_entries, knowledge_entries, self.tokenizer, max_len=2048
+        )
+
+        training_args = TrainingArguments(
+            output_dir="./results",
+            num_train_epochs=1,
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=16,
+            warmup_steps=0,
+            logging_steps=1,
+            learning_rate=5e-6,
+            save_strategy="no",
+        )
+
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+        )
+
+        # Train and get the loss
+        train_result = trainer.train()
+        return train_result.training_loss
 
     def get_error_distribution(self):
         current_session = self.training_session_service.get_current_session()
