@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
 from app.core.dependencies import (
+    get_llm_manager,
     get_model_training_service,
     get_training_session_service,
 )
@@ -93,14 +94,37 @@ class CorpusEntryInput(BaseModel):
 
 
 @app.post("/chat")
-def chat(chat_input: ChatInput):
+def chat(
+    chat_input: ChatInput,
+    llm_manager: LLMManager = Depends(get_llm_manager),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
     try:
-        response = llm_manager.chat(chat_input.history)
+        response = llm_manager.chat(
+            chat_input.history, training_session_service.get_current_session().name
+        )
         return {"response": response}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/smelt_new_corpus")
+async def smelt_new_corpus(
+    model_training_service: ModelTrainingService = Depends(get_model_training_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
+    session = training_session_service.get_current_session()
+    if not session:
+        raise HTTPException(status_code=404, detail="Training session not found")
+
+    result = model_training_service.smelt_new_corpus()
+    return result
 
 
 @app.post("/learn")
@@ -176,21 +200,6 @@ async def load_model(input: LoadModelInput):
         return {"message": f"Model {input.model_name} loaded successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/smelt_new_corpus")
-async def smelt_new_corpus(
-    model_training_service: ModelTrainingService = Depends(get_model_training_service),
-    training_session_service: TrainingSessionService = Depends(
-        get_training_session_service
-    ),
-):
-    session = training_session_service.get_current_session()
-    if not session:
-        raise HTTPException(status_code=404, detail="Training session not found")
-
-    result = model_training_service.smelt_new_corpus()
-    return result
 
 
 @app.get("/error_distribution")

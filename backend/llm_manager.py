@@ -75,9 +75,8 @@ class LLMManager:
         )
         self.tokenizer = AutoTokenizer.from_pretrained(base_model)
 
-    def chat(self, history):
-        if not self.model or not self.tokenizer:
-            raise ValueError("Model not loaded. Call load_model() first.")
+    def chat(self, history, session_name: str):
+        self._load_model_if_not_loaded(session_name)
 
         text = self.tokenizer.apply_chat_template(
             history, tokenize=False, add_generation_prompt=True
