@@ -1,22 +1,49 @@
+import 'dart:async';
+
+import 'package:app/api/api.dart';
 import 'package:app/models/training_session.dart';
 import 'package:flutter/foundation.dart';
 
 class GlobalTrainingSessionProvider extends ChangeNotifier {
-  bool _isSessionActive = false;
   TrainingSession? _currentSession;
+  Timer? _pollingTimer;
 
-  bool get isSessionActive => _isSessionActive;
   TrainingSession? get currentSession => _currentSession;
 
+  GlobalTrainingSessionProvider() {
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(
+        const Duration(seconds: 5), (_) => refreshCurrentSession());
+  }
+
+  Future<void> refreshCurrentSession() async {
+    try {
+      final session = await API.getCurrentSession();
+      if (_currentSession?.id != session?.id) {
+        _currentSession = session;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching current session: $e');
+    }
+  }
+
   void startSession(TrainingSession session) {
-    _isSessionActive = true;
     _currentSession = session;
     notifyListeners();
   }
 
   void endSession() {
-    _isSessionActive = false;
     _currentSession = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 }

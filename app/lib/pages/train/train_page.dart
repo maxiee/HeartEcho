@@ -1,5 +1,4 @@
 import 'package:app/models/training_session.dart';
-import 'package:app/pages/train/components/error_distribution_chart.dart';
 import 'package:app/pages/train/components/skill_card.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +39,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
     final newCorpusEntriesProvider =
         Provider.of<NewCorpusEntriesProvider>(context, listen: false);
 
-    if (sessionProvider.isSessionActive) {
+    if (sessionProvider.currentSession != null) {
       newCorpusEntriesProvider
           .fetchNewCorpusEntriesCount(sessionProvider.currentSession!);
     }
@@ -57,7 +56,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       appBar: AppBar(
         title: const Text('炼丹炉'),
         actions: [
-          if (globalSessionProvider.isSessionActive)
+          if (globalSessionProvider.currentSession != null)
             IconButton(
               icon: const Icon(Icons.stop),
               onPressed: () {

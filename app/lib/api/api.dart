@@ -195,6 +195,20 @@ class ApiClient {
     }
   }
 
+  Future<TrainingSession?> getCurrentSession() async {
+    final response = await http.get(Uri.parse('$baseUrl/sessions/current'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return TrainingSession.fromJson(data);
+    } else if (response.statusCode == 404) {
+      // 没有活跃的会话
+      return null;
+    } else {
+      throw Exception('Failed to get current session');
+    }
+  }
+
   Future<Map<String, dynamic>> getErrorDistribution(String sessionName) async {
     final response = await http.get(
       Uri.parse('$baseUrl/error_distribution?session=$sessionName'),
