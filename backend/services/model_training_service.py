@@ -25,7 +25,9 @@ class ModelTrainingService:
         selected_entries = self.corpus_entry_repo.sample_new_entries(batch_size)
 
         # Train the model
-        loss = self.llm_manager.train_on_entries(selected_entries)
+        loss = self.llm_manager.train_on_entries(
+            self.training_session_service.get_current_session().name, selected_entries
+        )
 
         for entry in selected_entries:
             self.training_loss_service.update_loss(entry.id, loss, entry)

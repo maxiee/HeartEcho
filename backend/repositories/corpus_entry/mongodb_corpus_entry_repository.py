@@ -83,7 +83,7 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         print(new_entries)
 
         if len(new_entries) < batch_size:
-            print("less than batch size")
+            print(f"less than batch size, {len(new_entries)=}, {batch_size=}")
             return []
 
         # Randomly sample batch_size entries
