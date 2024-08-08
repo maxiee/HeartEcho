@@ -78,15 +78,15 @@ class TestCorpusManagementService(unittest.TestCase):
                 corpus.id, entry_type="knowledge", content="Duplicate content"
             )
 
-    def test_add_entry_to_non_existent_corpus(service):
+    def test_add_entry_to_non_existent_corpus(self):
         with pytest.raises(ValueError, match="Corpus with id .* does not exist"):
-            service.add_entry_to_corpus(
+            self.service.add_entry_to_corpus(
                 "non_existent_corpus_id", entry_type="knowledge", content="Test content"
             )
 
     def test_remove_entry_from_corpus(self):
         corpus = self.service.create_corpus("Test Corpus", "Test Description")
-        entry = self.service.add_entry_to_corpus(corpus.id, "Test Content", "knowledge")
+        entry = self.service.add_entry_to_corpus(corpus.id, "knowledge", "Test Content")
         result = self.service.remove_entry_from_corpus(entry.id)
         self.assertTrue(result)
 
@@ -100,7 +100,7 @@ class TestCorpusManagementService(unittest.TestCase):
     def test_get_corpus_entries(self):
         corpus = self.service.create_corpus("Test Corpus", "Test Description")
         entries = [
-            self.service.add_entry_to_corpus(corpus.id, f"Content {i}", "knowledge")
+            self.service.add_entry_to_corpus(corpus.id, "knowledge", f"Content {i}")
             for i in range(5)
         ]
 
@@ -113,7 +113,7 @@ class TestCorpusManagementService(unittest.TestCase):
     def test_get_corpus_entries_with_pagination(self):
         corpus = self.service.create_corpus("Test Corpus", "Test Description")
         entries = [
-            self.service.add_entry_to_corpus(corpus.id, f"Content {i}", "knowledge")
+            self.service.add_entry_to_corpus(corpus.id, "knowledge", f"Content {i}")
             for i in range(10)
         ]
 
