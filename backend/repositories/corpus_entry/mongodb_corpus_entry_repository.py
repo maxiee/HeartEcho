@@ -58,7 +58,7 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
 
     def sample_new_entries(self, batch_size: int) -> List[CorpusEntry]:
         # Get all corpus entries
-        all_entries = set(CorpusEntry.objects().all())
+        all_entries = set(MongoCorpusEntry.objects().all())
 
         # Get entries that have been trained in the database
         # trained_entries = set(
@@ -79,12 +79,18 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         # Get new entries
         new_entries = list(all_entries - all_trained_entries)
 
-        assert (
-            len(new_entries) >= batch_size
-        ), f"len(new_entries)={len(new_entries)} < batch_size={batch_size}"
+        print("maxiee==========")
+        print(new_entries)
+
+        if len(new_entries) < batch_size:
+            print("less than batch size")
+            return []
 
         # Randomly sample batch_size entries
-        return random.sample(new_entries, batch_size)
+        selected_entries = random.sample(new_entries, batch_size)
+
+        # map to domain and return
+        return [self._to_domain(se) for se in selected_entries]
 
     def delete(self, entry_id: str) -> bool:
         result = MongoCorpusEntry.objects(id=entry_id).delete()

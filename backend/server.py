@@ -185,17 +185,12 @@ async def smelt_new_corpus(
         get_training_session_service
     ),
 ):
-    try:
-        session = training_session_service.get_current_session()
-        if not session:
-            raise HTTPException(status_code=404, detail="Training session not found")
+    session = training_session_service.get_current_session()
+    if not session:
+        raise HTTPException(status_code=404, detail="Training session not found")
 
-        result = model_training_service.smelt_new_corpus(session)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    result = model_training_service.smelt_new_corpus()
+    return result
 
 
 @app.get("/error_distribution")

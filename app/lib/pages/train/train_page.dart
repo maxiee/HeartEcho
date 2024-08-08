@@ -80,10 +80,10 @@ class _TrainPageContentState extends State<_TrainPageContent> {
               const SizedBox(height: 20),
               // ErrorDistributionChart(
               //     sessionName: globalSessionProvider.currentSession!.name),
-              // newCorpusEntriesProvider.isLoading
-              //     ? const CircularProgressIndicator()
-              //     : Text(
-              //         'New corpus entries: ${newCorpusEntriesProvider.count}'),
+              newCorpusEntriesProvider.isLoading
+                  ? const CircularProgressIndicator()
+                  : Text(
+                      'New corpus entries: ${newCorpusEntriesProvider.count}'),
               const SizedBox(height: 20),
               SkillCard(
                 title: '熔炼新语料',

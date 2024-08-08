@@ -28,6 +28,8 @@ class TrainingSessionService:
         )
         created_session = self.session_repo.create(session)
         self.current_session = created_session
+        self.llm_manager.init_new_model(created_session.base_model)
+        self.llm_manager.save_model(created_session)
         return created_session
 
     def load_session(self, session_id: str) -> TrainingSession:
@@ -41,7 +43,7 @@ class TrainingSessionService:
     def save_current_session(self):
         assert self.current_session is not None, "There is no active session"
         self.session_repo.update(self.current_session)
-        self.llm_manager.save_model()
+        self.llm_manager.save_model(self.current_session)
 
     def get_current_session(self) -> Optional[TrainingSession]:
         return self.current_session

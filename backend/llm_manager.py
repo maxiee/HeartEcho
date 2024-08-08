@@ -61,16 +61,19 @@ class LLMManager:
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model.to(self.device)
 
-    def init_new_model(self, save_path):
+    def _load_model_if_not_loaded(self, session_name: str):
+        model_dir = self._get_model_dir_from_session_name(session_name)
+        if not self.model or not self.tokenizer:
+            self.load_model(model_dir)
+
+    def init_new_model(self, base_model: str):
         # Initialize a new model from the base model
         self.model = AutoModelForCausalLM.from_pretrained(
-            settings.model_name, torch_dtype="auto", device_map="auto"
+            base_model,
+            torch_dtype="auto",
+            device_map="auto",
         )
-        self.tokenizer = AutoTokenizer.from_pretrained(settings.tokenizer_name)
-
-        # Save the initialized model
-        self.model.save_pretrained(save_path)
-        self.tokenizer.save_pretrained(save_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(base_model)
 
     def chat(self, history):
         if not self.model or not self.tokenizer:
@@ -125,9 +128,7 @@ class LLMManager:
         return "ok"
 
     def smelt_new_corpus(self, session_name, batch_size=16):
-        current_session = self.training_session_service.get_current_session()
-        if not current_session:
-            raise ValueError("No active training session")
+        self._load_model_if_not_loaded(session_name)
 
         # Get all corpus entries
         all_entries = set(CorpusEntry.objects().all())
@@ -286,8 +287,11 @@ class LLMManager:
         if not self.model:
             raise ValueError("Model not loaded. Call load_model() first.")
 
-        model_dir = os.path.join(settings.model_dir, session.name)
+        model_dir = self._get_model_dir_from_session_name(session.name)
 
         self.model.save_pretrained(model_dir)
         self.tokenizer.save_pretrained(model_dir)
         return True
+
+    def _get_model_dir_from_session_name(self, session_name: str):
+        return os.path.join("./trained", session_name)
