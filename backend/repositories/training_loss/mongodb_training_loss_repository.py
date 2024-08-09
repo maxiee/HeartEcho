@@ -51,7 +51,7 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
                 existing_loss.timestamp = training_loss.timestamp
                 existing_loss.loss_value = training_loss.loss_value
                 existing_loss.save()
-                print("Training loss saved")
+                print("Training loss update successful")
                 return self._to_domain(existing_loss)
         return self._to_domain(mongo_loss)
 
