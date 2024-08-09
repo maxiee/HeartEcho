@@ -96,6 +96,9 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         result = MongoCorpusEntry.objects(id=entry_id).delete()
         return result > 0
 
+    def count(self) -> int:
+        return MongoCorpusEntry.objects.count()
+
     def _to_domain(self, mongo_entry: MongoCorpusEntry) -> CorpusEntry:
         return CorpusEntry(
             id=mongo_entry.id,

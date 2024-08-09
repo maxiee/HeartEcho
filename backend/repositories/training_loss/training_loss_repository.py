@@ -23,3 +23,7 @@ class TrainingLossRepository(ABC):
     @abstractmethod
     def count_by_loss_rank(self, session_id: str, loss_rank: str) -> int:
         pass
+
+    @abstractmethod
+    def count_by_session_id(self, session_id: str) -> int:
+        pass

@@ -68,3 +68,6 @@ class CorpusManagementService:
     ) -> List[CorpusEntry]:
         """获取语料库中的条目列表。"""
         return self.corpus_entry_repo.list_by_corpus(corpus, skip, limit)
+
+    def count_all_corpus_entries(self) -> int:
+        return self.corpus_entry_repo.count()

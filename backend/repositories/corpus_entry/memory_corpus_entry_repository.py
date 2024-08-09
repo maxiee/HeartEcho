@@ -34,3 +34,6 @@ class MemoryCorpusEntryRepository(CorpusEntryRepository):
             del self.entries[entry_id]
             return True
         return False
+
+    def count(self) -> int:
+        return len(self.entries)

@@ -64,3 +64,6 @@ class TrainingLossService:
             distribution.append(LossDistributionItem(lower=range, count=count))
 
         return distribution
+
+    def count_trained_entries_for_session(self, session_id: str) -> int:
+        return self.training_loss_repo.count_by_session_id(session_id)

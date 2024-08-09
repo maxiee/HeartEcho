@@ -92,19 +92,6 @@ async def create_training_session():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/new_corpus_entries_count")
-async def get_new_corpus_entries_count(
-    session: str = Query(..., description="Training session name")
-):
-    try:
-        total_corpus_entries = CorpusEntry.objects.count()
-        trained_entries_count = TrainingError.objects(session=session).count()
-        new_entries_count = total_corpus_entries - trained_entries_count
-        return {"new_entries_count": max(0, new_entries_count)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # @app.middleware("http")
 # async def log_responses(request: Request, call_next):
 #     print("---")

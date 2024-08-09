@@ -93,3 +93,24 @@ async def get_loss_distribution(
 
     distribution = training_loss_service.get_loss_distribution(current_session.id)
     return LossDistributionResponse(distribution=distribution)
+
+
+@router.get("/new_corpus_entries_count")
+async def get_new_corpus_entries_count(
+    corpus_service: CorpusManagementService = Depends(get_corpus_service),
+    training_loss_service: TrainingLossService = Depends(get_training_loss_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
+    current_session = training_session_service.get_current_session()
+    if not current_session:
+        raise HTTPException(status_code=404, detail="No active training session")
+
+    total_corpus_entries = corpus_service.count_all_corpus_entries()
+    trained_entries_count = training_loss_service.count_trained_entries_for_session(
+        current_session.id
+    )
+    new_entries_count = max(0, total_corpus_entries - trained_entries_count)
+
+    return {"new_entries_count": new_entries_count}

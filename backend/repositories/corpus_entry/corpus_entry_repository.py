@@ -25,3 +25,7 @@ class CorpusEntryRepository(ABC):
     @abstractmethod
     def delete(self, entry_id: str) -> bool:
         pass
+
+    @abstractmethod
+    def count(self) -> int:
+        pass
