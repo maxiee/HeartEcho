@@ -64,3 +64,32 @@ class Message {
       _$MessageFromJson(json);
   Map<String, dynamic> toJson() => _$MessageToJson(this);
 }
+
+class LossDistributionItem {
+  final String lower;
+  final int count;
+
+  LossDistributionItem({required this.lower, required this.count});
+
+  factory LossDistributionItem.fromJson(Map<String, dynamic> json) {
+    return LossDistributionItem(
+      lower: json['lower'],
+      count: json['count'],
+    );
+  }
+}
+
+class LossDistributionResponse {
+  final List<LossDistributionItem> distribution;
+
+  LossDistributionResponse({required this.distribution});
+
+  factory LossDistributionResponse.fromJson(Map<String, dynamic> json) {
+    var distributionList = json['distribution'] as List;
+    List<LossDistributionItem> distributionItems = distributionList
+        .map((item) => LossDistributionItem.fromJson(item))
+        .toList();
+
+    return LossDistributionResponse(distribution: distributionItems);
+  }
+}

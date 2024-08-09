@@ -223,12 +223,11 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> getErrorDistribution(String sessionName) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/error_distribution?session=$sessionName'),
-    );
+  Future<LossDistributionResponse> getErrorDistribution() async {
+    final response =
+        await http.get(Uri.parse('$baseUrl/corpus/loss_distribution'));
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      return LossDistributionResponse.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to load error distribution');
     }
@@ -236,7 +235,8 @@ class ApiClient {
 
   Future<int> getNewCorpusEntriesCount(String sessionName) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/new_corpus_entries_count?session=$sessionName'),
+      Uri.parse(
+          '$baseUrl/corpus/new_corpus_entries_count?session=$sessionName'),
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

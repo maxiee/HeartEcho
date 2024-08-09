@@ -1,4 +1,5 @@
 import 'package:app/models/training_session.dart';
+import 'package:app/pages/train/components/error_distribution_chart.dart';
 import 'package:app/pages/train/components/skill_card.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
 import 'package:flutter/material.dart';
@@ -24,12 +25,13 @@ class _TrainPageContentState extends State<_TrainPageContent> {
   List<String> savedModels = [];
   String? selectedModel;
   bool isSmeltingInProgress = false;
+  int _refreshTrigger = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // _loadData();
+      _loadData();
     });
   }
 
@@ -77,8 +79,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
               Text(
                   'Active session: ${globalSessionProvider.currentSession?.name}'),
               const SizedBox(height: 20),
-              // ErrorDistributionChart(
-              //     sessionName: globalSessionProvider.currentSession!.name),
+              ErrorDistributionChart(refreshTrigger: _refreshTrigger),
               newCorpusEntriesProvider.isLoading
                   ? const CircularProgressIndicator()
                   : Text(
@@ -120,6 +121,9 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       // Refresh the error distribution and new corpus entries count
       await newCorpusEntriesProvider
           .fetchNewCorpusEntriesCount(globalSessionProvider.currentSession!);
+      setState(() {
+        _refreshTrigger++; // Trigger a refresh of the ErrorDistributionChart
+      });
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
