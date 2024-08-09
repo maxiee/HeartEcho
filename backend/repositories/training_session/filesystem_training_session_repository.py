@@ -78,6 +78,7 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
             "base_model": session.base_model,
             "start_time": session.start_time.isoformat(),
             "last_trained": session.last_trained.isoformat(),
+            "tokens_trained": session.tokens_trained,
             "metrics": session.metrics,
         }
         with open(info_path, "w") as f:
@@ -90,5 +91,6 @@ class FileSystemTrainingSessionRepository(TrainingSessionRepository):
             base_model=info["base_model"],
             start_time=datetime.fromisoformat(info["start_time"]),
             last_trained=datetime.fromisoformat(info["last_trained"]),
+            tokens_trained=info["tokens_trained"] if "tokens_trained" in info else 0,
             metrics=info["metrics"],
         )

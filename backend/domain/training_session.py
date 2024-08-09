@@ -17,3 +17,6 @@ class TrainingSession:
     def update_metrics(self, new_metrics: dict):
         self.metrics.update(new_metrics)
         self.last_trained = datetime.now()
+
+    def increment_tokens_trained(self, tokens: int):
+        self.tokens_trained += tokens

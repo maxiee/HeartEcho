@@ -17,6 +17,7 @@ class TrainingSessionResponse(BaseModel):
     start_time: datetime
     last_trained: datetime
     last_trained: Optional[datetime] = None
+    tokens_trained: int = 0
     metrics: dict
 
     @classmethod
@@ -27,5 +28,6 @@ class TrainingSessionResponse(BaseModel):
             base_model=session.base_model,
             start_time=session.start_time,
             last_trained=session.last_trained,
+            tokens_trained=session.tokens_trained,
             metrics=session.metrics,
         )

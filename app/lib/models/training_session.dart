@@ -5,6 +5,7 @@ class TrainingSession {
   final DateTime startTime;
   final DateTime lastTrained;
   final DateTime? endTime;
+  final int tokensTrained;
   final Map<String, dynamic> metrics;
 
   TrainingSession({
@@ -14,6 +15,7 @@ class TrainingSession {
     required this.startTime,
     required this.lastTrained,
     this.endTime,
+    required this.tokensTrained,
     required this.metrics,
   });
 
@@ -26,6 +28,7 @@ class TrainingSession {
       lastTrained: DateTime.parse(json['last_trained']),
       endTime:
           json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      tokensTrained: json['tokens_trained'] ?? 0,
       metrics: json['metrics'],
     );
   }
