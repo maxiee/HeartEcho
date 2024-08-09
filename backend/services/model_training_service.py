@@ -49,7 +49,11 @@ class ModelTrainingService:
         self.training_session_service.update_tokens_trained(total_tokens)
 
         for entry in selected_entries:
-            self.training_loss_service.update_loss(entry.id, loss, entry)
+            self.training_loss_service.update_loss(
+                entry.id,
+                loss,
+                self.training_session_service.get_current_session(),
+            )
 
         return {
             "message": "New corpus smelting completed",

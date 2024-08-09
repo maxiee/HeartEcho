@@ -41,14 +41,10 @@ async def save_current_session(
     training_session_service: TrainingSessionService = Depends(
         get_training_session_service
     ),
-    training_loss_service: TrainingLossService = Depends(get_training_loss_service),
 ):
     try:
         # Save the current session and model
         saved_session = training_session_service.save_current_session()
-
-        # Call the empty save method in TrainingLossService
-        training_loss_service.save(saved_session)
 
         return TrainingSessionResponse.from_domain(saved_session)
     except ValueError as e:
