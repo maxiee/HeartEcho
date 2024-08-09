@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.core.dependencies import get_training_session_service
+from app.core.dependencies import (
+    get_training_loss_service,
+    get_training_session_service,
+)
 from app.schemas.sessions import TrainingSessionCreate, TrainingSessionResponse
+from services.training_loss_service import TrainingLossService
 from services.training_session_service import TrainingSessionService
 
 router = APIRouter()
@@ -28,6 +32,25 @@ async def load_training_session(
     try:
         loaded_session = service.load_session(session_id)
         return TrainingSessionResponse.from_domain(loaded_session)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/save", response_model=TrainingSessionResponse)
+async def save_current_session(
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+    training_loss_service: TrainingLossService = Depends(get_training_loss_service),
+):
+    try:
+        # Save the current session and model
+        saved_session = training_session_service.save_current_session()
+
+        # Call the empty save method in TrainingLossService
+        training_loss_service.save(saved_session)
+
+        return TrainingSessionResponse.from_domain(saved_session)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

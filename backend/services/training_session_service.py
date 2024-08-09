@@ -41,9 +41,13 @@ class TrainingSessionService:
         return session
 
     def save_current_session(self):
-        assert self.current_session is not None, "There is no active session"
+        if not self.current_session:
+            raise ValueError("No active training session")
+        # Save the session to the repository
         self.session_repo.update(self.current_session)
+        # Save the model using LLMManager
         self.llm_manager.save_model(self.current_session)
+        return self.current_session
 
     def get_current_session(self) -> Optional[TrainingSession]:
         return self.current_session
@@ -67,4 +71,3 @@ class TrainingSessionService:
         if not self.current_session:
             raise ValueError("No active training session")
         self.current_session.tokens_trained += new_tokens
-        # self.session_repo.update(self.current_session)
