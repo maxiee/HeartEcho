@@ -89,15 +89,15 @@ class ModelTrainingService:
         )
         # Randomly sample batch_size entries
         selected_entries = self.corpus_entry_repo.sample_new_entries(
-            batch_size / 2,
+            int(batch_size / 2),
             self.corpus_entry_repo.count(),
             self.training_session_service.get_current_session().id,
         )
 
-        if len(selected_entries) < batch_size / 2:
+        if len(selected_entries) < int(batch_size / 2):
             highest_loss_entries = self.training_loss_service.get_highest_loss_entries(
                 self.training_session_service.get_current_session().id,
-                batch_size / 2 - len(selected_entries),
+                int(batch_size / 2) - len(selected_entries),
             )
             selected_entries += highest_loss_entries
 

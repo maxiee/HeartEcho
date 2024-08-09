@@ -213,7 +213,7 @@ class LLMManager:
         self.model.train()
 
         # 初始化优化器
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=5e-6)
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-5)
 
         # 用于累积和计算平均损失
         total_loss = 0.0
