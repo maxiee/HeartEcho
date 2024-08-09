@@ -140,8 +140,22 @@ class LLMManager:
             model_inputs.input_ids,
             max_new_tokens=2048,
             do_sample=True,
-            temperature=0.7,
-            top_p=0.95,
+            # Temperature (温度)
+            # 温度参数控制生成过程中的随机性。
+            # 较低的温度（例如 0.7）会让模型更“保守”，即更倾向于选择概率更高的下一个词，从而生成更确定性的输出；
+            # 较高的温度（例如 1.5）会增加随机性，使模型更愿意选择那些概率相对较低的词，从而生成更多样化和出乎意料的输出。
+            temperature=0.9,
+            # Top-p (核采样)
+            # 这个参数会在模型生成时考虑概率累积达到 p 值的词集合。
+            # 例如，top_p=0.95 意味着只考虑那些使得概率总和达到 95% 的词，而忽略剩下的低概率词。
+            # 这种方法可以动态地调整被考虑的词数量，确保模型生成的内容在合理范围内又不失随机性。
+            # top_p 像是在生成时只考虑“最有可能的一群词”，而不是所有可能的词，从而保持生成的合理性和多样性之间的平衡。
+            top_p=0.85,
+            # Top-k (最高 k 采样)
+            # 在生成过程中，只从概率最高的前 k 个词中进行采样。
+            # 设置 top_k=50，意味着模型只会从最可能的前 50 个词中选择下一个词。这种方法能有效地减少生成中引入的随机性，确保输出的连贯性。
+            # top_k 就像是在生成时限制“视野”，只看最可能的几个词，忽略那些可能性极低的词，从而使生成更加稳妥。
+            top_k=50,
         )
         response = self.tokenizer.decode(
             generated_ids[0][len(model_inputs.input_ids[0]) :], skip_special_tokens=True
@@ -207,60 +221,87 @@ class LLMManager:
         # 用于当前梯度累积周期的损失
         accumulated_loss = 0.0
 
+        max_token_length = 0
+        max_token_entry = None
+
         print("开始训练过程！我们将一步步学习新的知识。")
         print(f"我们总共有 {len(train_dataloader)} 条数据要学习。")
         print("我们会每学习16条数据后，就整理一下我们学到的东西。")
 
         # 遍历数据集
         for step, batch in enumerate(train_dataloader):
-            print(f"\n--- 正在学习第 {step + 1} 条数据 ---")
+            # 计算当前批次的 token 长度
+            token_length = batch["input_ids"].size(1)  # 获取序列长度
+            print(
+                f"\n--- 正在学习第 {step + 1} 条数据 (Token 长度: {token_length}) ---"
+            )
+
+            # 更新最大 token 长度
+            if token_length > max_token_length:
+                max_token_length = token_length
+                max_token_entry = step + 1
 
             # 将批次数据移动到正确的设备上
             batch = {k: v.to(self.device) for k, v in batch.items()}
             print("1. 我已经仔细阅读了这条数据。")
 
-            # 前向传播
-            outputs = self.model(**batch)
-            loss = outputs.loss
-            print(
-                f"2. 我尝试理解这条数据，并估算了我的理解程度。我的理解误差是: {loss.item():.4f}"
-            )
+            try:
 
-            # 累积损失（用于日志记录）
-            accumulated_loss += loss.item()
-            total_loss += loss.item()
-
-            # 归一化损失以考虑梯度累积
-            # 梯度累积是一种在处理大批量数据时模拟大批量效果的技术。在我们的情况下，我们想要模拟一次处理16个样本的效果，但由于内存限制，我们每次只处理1个样本。
-            # 因为我们要累积16步的梯度才进行一次参数更新，所以我们需要将每一步的损失除以16，以保持与一次性处理16个样本时损失的等价性。
-            loss = loss / 16  # TODO 硬编码
-            print("3. 我记录下了这次的学习成果，以便之后整理。")
-
-            # 反向传播
-            loss.backward()
-            print("4. 我思考了一下如何改进我的理解。")
-
-            # 每16步或在最后一步执行优化器步骤
-            if (step + 1) % 16 == 0 or (step + 1) == len(train_dataloader):
-                # 执行优化器步骤
-                optimizer.step()
-                # 清零梯度
-                optimizer.zero_grad()
-
+                # 前向传播
+                outputs = self.model(**batch)
+                loss = outputs.loss
                 print(
-                    f"5. 我已经学习了16条数据（或所有数据），现在我要整理一下我学到的东西。"
+                    f"2. 我尝试理解这条数据，并估算了我的理解程度。我的理解误差是: {loss.item():.4f}"
                 )
-                print(
-                    f"   在这16条数据中，我的平均理解误差是: {accumulated_loss/min(16, step%16+1):.4f}"
-                )
-                accumulated_loss = 0.0
-            else:
-                print("5. 我还没学够16条数据，我会继续学习下一条。")
+
+                # 累积损失（用于日志记录）
+                accumulated_loss += loss.item()
+                total_loss += loss.item()
+
+                # 归一化损失以考虑梯度累积
+                # 梯度累积是一种在处理大批量数据时模拟大批量效果的技术。在我们的情况下，我们想要模拟一次处理16个样本的效果，但由于内存限制，我们每次只处理1个样本。
+                # 因为我们要累积16步的梯度才进行一次参数更新，所以我们需要将每一步的损失除以16，以保持与一次性处理16个样本时损失的等价性。
+                loss = loss / 16  # TODO 硬编码
+                print("3. 我记录下了这次的学习成果，以便之后整理。")
+
+                # 反向传播
+                loss.backward()
+                print("4. 我思考了一下如何改进我的理解。")
+
+                # 每16步或在最后一步执行优化器步骤
+                if (step + 1) % 16 == 0 or (step + 1) == len(train_dataloader):
+                    # 执行优化器步骤
+                    optimizer.step()
+                    # 清零梯度
+                    optimizer.zero_grad()
+
+                    print(
+                        f"5. 我已经学习了16条数据（或所有数据），现在我要整理一下我学到的东西。"
+                    )
+                    print(
+                        f"   在这16条数据中，我的平均理解误差是: {accumulated_loss/min(16, step%16+1):.4f}"
+                    )
+                    accumulated_loss = 0.0
+                else:
+                    print("5. 我还没学够16条数据，我会继续学习下一条。")
+            except RuntimeError as e:
+                if "out of memory" in str(e):
+                    print(
+                        f"警告：处理第 {step + 1} 条数据时内存不足。这条数据的 token 长度为 {token_length}。"
+                    )
+                    print("跳过这条数据并继续训练。")
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                else:
+                    raise e
 
         # 计算平均损失
         average_loss = total_loss / len(train_dataloader)
         print(f"\n训练结束！在整个学习过程中，我的平均理解误差是: {average_loss:.4f}")
         print("这个数字越小，说明我学得越好！")
+        print(
+            f"最长的语料是第 {max_token_entry} 条，长度为 {max_token_length} 个 token。"
+        )
         return average_loss
 
     def get_error_distribution(self):
