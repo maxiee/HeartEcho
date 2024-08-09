@@ -11,6 +11,9 @@ from mongoengine import (
 from app.core.db import DB
 from domain.corpus import CorpusEntry
 from repositories.corpus.mongodb_corpus_repository import MongoCorpus
+from repositories.training_loss.mongodb_training_loss_repository import (
+    MongoTrainingLoss,
+)
 from .corpus_entry_repository import CorpusEntryRepository
 
 
@@ -56,41 +59,39 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         mongo_entries = MongoCorpusEntry.objects(corpus=corpus).skip(skip).limit(limit)
         return [self._to_domain(me) for me in mongo_entries]
 
-    def sample_new_entries(self, batch_size: int) -> List[CorpusEntry]:
-        # Get all corpus entries
-        all_entries = set(MongoCorpusEntry.objects().all())
+    def sample_new_entries(
+        self, batch_size: int, total_entries: int, session_id: str
+    ) -> List[CorpusEntry]:
+        new_entries = []
+        page_size = 100
+        skip = 0
 
-        # Get entries that have been trained in the database
-        # trained_entries = set(
-        #     TrainingError.objects(session=session_name).distinct("corpus_entry")
-        # )
-        trained_entries = set()
+        while len(new_entries) < batch_size:
+            # 逆序查询语料条目
+            entries = (
+                MongoCorpusEntry.objects().order_by("-_id").skip(skip).limit(page_size)
+            )
 
-        # Get entries that have been trained in this session (from cached_errors)
-        cached_trained_entries = set()
-        # if session_name in self.cached_errors:
-        #     cached_trained_entries = set(
-        #         CorpusEntry.objects(id__in=self.cached_errors[session_name].keys())
-        #     )
+            for entry in entries:
+                # 检查该条目是否已经被训练过
+                if not MongoTrainingLoss.objects(
+                    corpus_entry_id=entry.id, session_id=session_id
+                ).first():
+                    new_entries.append(self._to_domain(entry))
+                    if len(new_entries) == batch_size:
+                        break
 
-        # Combine all trained entries
-        all_trained_entries = trained_entries.union(cached_trained_entries)
+            if len(new_entries) == batch_size:
+                break
 
-        # Get new entries
-        new_entries = list(all_entries - all_trained_entries)
+            skip += page_size
+            if skip >= total_entries:
+                break  # 已经遍历完所有条目
 
-        print("maxiee==========")
-        print(new_entries)
-
-        if len(new_entries) < batch_size:
-            print(f"less than batch size, {len(new_entries)=}, {batch_size=}")
-            return []
-
-        # Randomly sample batch_size entries
-        selected_entries = random.sample(new_entries, batch_size)
-
-        # map to domain and return
-        return [self._to_domain(se) for se in selected_entries]
+        # 随机打乱新语料的顺序
+        random.shuffle(new_entries)
+        assert len(new_entries) <= batch_size
+        return new_entries
 
     def delete(self, entry_id: str) -> bool:
         result = MongoCorpusEntry.objects(id=entry_id).delete()

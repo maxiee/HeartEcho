@@ -19,7 +19,9 @@ class CorpusEntryRepository(ABC):
         pass
 
     @abstractmethod
-    def sample_new_entries(self, batch_size: int) -> List[CorpusEntry]:
+    def sample_new_entries(
+        self, batch_size: int, total_entries: int, session_id: str
+    ) -> List[CorpusEntry]:
         pass
 
     @abstractmethod

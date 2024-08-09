@@ -1,3 +1,4 @@
+from typing import List
 from domain.corpus import CorpusEntry
 from llm_manager import LLMManager
 from repositories.corpus_entry.corpus_entry_repository import CorpusEntryRepository
@@ -29,6 +30,22 @@ class ModelTrainingService:
         else:
             raise ValueError(f"Unknown entry type: {entry.entry_type}")
 
+    def sample_new_entries(self, batch_size: int, session_id: str) -> List[CorpusEntry]:
+        # 前置检查：确保新语料数量大于 batch_size
+        total_entries = self.corpus_entry_repo.count()
+        new_entries_count = self.training_loss_service.get_new_corpus_entries_count(
+            session_id, total_entries
+        )
+
+        if new_entries_count < batch_size:
+            raise ValueError(
+                f"New corpus entries count is less than batch size: {new_entries_count} < {batch_size}"
+            )
+
+        return self.corpus_entry_repo.sample_new_entries(
+            batch_size, total_entries, session_id
+        )
+
     def smelt_new_corpus(self, batch_size: int = 16) -> dict:
         assert (
             self.training_session_service.get_current_session()
@@ -37,7 +54,9 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().name
         )
         # Randomly sample batch_size entries
-        selected_entries = self.corpus_entry_repo.sample_new_entries(batch_size)
+        selected_entries = self.sample_new_entries(
+            batch_size, self.training_session_service.get_current_session().id
+        )
 
         total_tokens = sum(self._count_tokens(entry) for entry in selected_entries)
 

@@ -67,3 +67,9 @@ class TrainingLossService:
 
     def count_trained_entries_for_session(self, session_id: str) -> int:
         return self.training_loss_repo.count_by_session_id(session_id)
+
+    def get_new_corpus_entries_count(
+        self, session_id: str, total_corpus_entries: int
+    ) -> int:
+        trained_entries_count = self.training_loss_repo.count_by_session_id(session_id)
+        return max(0, total_corpus_entries - trained_entries_count)
