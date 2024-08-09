@@ -39,6 +39,7 @@ dependencies:
   path_provider: ^2.1.2
   json_annotation: ^4.9.0
   fl_chart: ^0.68.0
+  window_manager: ^0.4.0
 
 dev_dependencies:
   flutter_test:

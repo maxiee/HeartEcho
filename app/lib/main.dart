@@ -1,3 +1,4 @@
+import 'package:app/api/api.dart';
 import 'package:app/components/global_titlebar.dart';
 import 'package:app/global_provider.dart';
 import 'package:app/pages/chat/chat_page.dart';
@@ -9,6 +10,7 @@ import 'package:app/providers/batch_provider.dart';
 import 'package:app/providers/global_training_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() {
   runApp(MultiProvider(providers: [
@@ -45,8 +47,27 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WindowListener {
   bool _sessionStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _init();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  void _init() async {
+    // Add this line to override the default close handler
+    await windowManager.setPreventClose(true);
+    setState(() {});
+  }
 
   void _onSessionStart() {
     setState(() {
@@ -77,5 +98,69 @@ class _MyHomePageState extends State<MyHomePage> {
     if (currentMode == Mode.Corpus) return const CorpusManagementPage();
     if (currentMode == Mode.Train) return const TrainPage();
     return const Placeholder();
+  }
+
+  @override
+  void onWindowClose() async {
+    bool _isPreventClose = await windowManager.isPreventClose();
+    if (_isPreventClose) {
+      // Show a dialog to inform the user that the app is saving and closing
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          return AlertDialog(
+            title: Text('Saving and closing...'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Please wait while we save your model.'),
+              ],
+            ),
+          );
+        },
+      );
+
+      try {
+        // Get necessary providers
+        final globalSessionProvider =
+            Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+
+        // Save current session
+        final newSession = await API.saveCurrentSession();
+
+        // Update the initial tokens trained
+        globalSessionProvider
+            .updateInitialTokensTrained(newSession.tokensTrained);
+
+        // Show success message (optional, since we're closing the app anyway)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session saved successfully')),
+        );
+
+        // Close the app after saving
+        await windowManager.destroy();
+      } catch (e) {
+        // If there's an error, show it to the user
+        Navigator.of(context).pop(); // Close the "Saving and closing" dialog
+        showDialog(
+          context: context,
+          builder: (_) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Failed to save the session: $e'),
+              actions: [
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
   }
 }
