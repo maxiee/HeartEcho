@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:app/providers/global_training_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/global_provider.dart';
@@ -15,6 +16,7 @@ class GlobalTitlebar extends StatefulWidget {
 class _GlobalTitlebarState extends State<GlobalTitlebar> {
   Timer? _timer;
   TrainingSession? _currentSession;
+  bool _isSaveEnabled = false;
 
   @override
   void initState() {
@@ -40,10 +42,41 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
       final session = await API.getCurrentSession();
       setState(() {
         _currentSession = session;
+        _updateSaveButtonState();
       });
     } catch (e) {
       // Handle error (e.g., log it or show a snackbar)
       debugPrint('Error fetching current session: $e');
+    }
+  }
+
+  void _updateSaveButtonState() {
+    final globalSessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final initialTokens = globalSessionProvider.initialTokensTrained;
+    final currentTokens = _currentSession?.tokensTrained ?? 0;
+    setState(() {
+      _isSaveEnabled = currentTokens > initialTokens;
+    });
+  }
+
+  Future<void> _saveCurrentSession() async {
+    try {
+      await API.saveCurrentSession();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session saved successfully')),
+      );
+      final globalSessionProvider =
+          Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+      globalSessionProvider
+          .updateInitialTokensTrained(_currentSession?.tokensTrained ?? 0);
+      setState(() {
+        _isSaveEnabled = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving session: $e')),
+      );
     }
   }
 
@@ -82,6 +115,11 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
           _buildNavigationButtons(currentMode, globalProvider),
           const Spacer(),
           _buildSessionInfo(),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _isSaveEnabled ? _saveCurrentSession : null,
+            tooltip: "Save current session",
+          ),
         ],
       ),
     );

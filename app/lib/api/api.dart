@@ -209,6 +209,20 @@ class ApiClient {
     }
   }
 
+  Future<TrainingSession> saveCurrentSession() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/sessions/save'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return TrainingSession.fromJson(data);
+    } else {
+      throw Exception('Failed to save current session: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> getErrorDistribution(String sessionName) async {
     final response = await http.get(
       Uri.parse('$baseUrl/error_distribution?session=$sessionName'),

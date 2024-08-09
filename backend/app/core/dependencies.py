@@ -1,11 +1,16 @@
 from functools import lru_cache
 
 from app.core.config import settings
+from domain import training_loss
 from llm_manager import LLMManager
 from repositories.corpus.mongodb_corpus_repository import MongoDBCorpusRepository
 from repositories.corpus_entry.mongodb_corpus_entry_repository import (
     MongoDBCorpusEntryRepository,
 )
+from repositories.training_loss.mongodb_training_loss_repository import (
+    MongoDBTrainingLossRepository,
+)
+from repositories.training_loss.training_loss_repository import TrainingLossRepository
 from repositories.training_session.filesystem_training_session_repository import (
     FileSystemTrainingSessionRepository,
 )
@@ -40,7 +45,8 @@ def get_model_training_service() -> ModelTrainingService:
 
 @lru_cache()
 def get_training_loss_service():
-    return TrainingLossService()
+    training_loss_repo = MongoDBTrainingLossRepository()
+    return TrainingLossService(training_loss_repo=training_loss_repo)
 
 
 @lru_cache()

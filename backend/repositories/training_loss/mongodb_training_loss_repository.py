@@ -13,8 +13,9 @@ from .training_loss_repository import TrainingLossRepository
 
 
 class MongoTrainingLoss(Document):
+    id = StringField(primary_key=True)
     corpus_entry_id = StringField(required=True, unique=True)
-    session_id = StringField(required=True, unique=True)
+    session_id = StringField(required=True)
     timestamp = DateTimeField(required=True)
     loss_value = FloatField(required=True)
     loss_rank = IntField(required=True)
@@ -37,7 +38,9 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
         )
         try:
             mongo_loss.save()
+            print("Training loss saved")
         except NotUniqueError:
+            print("Training loss already exists")
             # If the document already exists, update it
             existing_loss = MongoTrainingLoss.objects(
                 corpus_entry_id=training_loss.corpus_entry_id,
@@ -48,6 +51,7 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
                 existing_loss.timestamp = training_loss.timestamp
                 existing_loss.loss_value = training_loss.loss_value
                 existing_loss.save()
+                print("Training loss saved")
                 return self._to_domain(existing_loss)
         return self._to_domain(mongo_loss)
 

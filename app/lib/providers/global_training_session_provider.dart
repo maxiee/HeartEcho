@@ -7,8 +7,10 @@ import 'package:flutter/foundation.dart';
 class GlobalTrainingSessionProvider extends ChangeNotifier {
   TrainingSession? _currentSession;
   Timer? _pollingTimer;
+  int _initialTokensTrained = 0;
 
   TrainingSession? get currentSession => _currentSession;
+  int get initialTokensTrained => _initialTokensTrained;
 
   GlobalTrainingSessionProvider() {
     _startPolling();
@@ -33,6 +35,12 @@ class GlobalTrainingSessionProvider extends ChangeNotifier {
 
   void startSession(TrainingSession session) {
     _currentSession = session;
+    _initialTokensTrained = session.tokensTrained;
+    notifyListeners();
+  }
+
+  void updateInitialTokensTrained(int tokens) {
+    _initialTokensTrained = tokens;
     notifyListeners();
   }
 
