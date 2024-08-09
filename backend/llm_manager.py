@@ -2,7 +2,7 @@ import os
 import random
 from typing import List
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from transformers.trainer_pt_utils import LabelSmoother
 from domain.corpus import CorpusEntry
@@ -44,6 +44,60 @@ class HeartEchoDataset(Dataset):
             "attention_mask": self.encodings.attention_mask[i],
             "labels": self.encodings.input_ids[i].clone(),
         }
+
+
+class DynamicHeartEchoDataset(Dataset):
+    def __init__(self, entries: List[CorpusEntry], tokenizer):
+        self.entries = entries
+        self.tokenizer = tokenizer
+
+    def __len__(self):
+        return len(self.entries)
+
+    def __getitem__(self, idx):
+        entry = self.entries[idx]
+        if entry.entry_type == "chat":
+            text = self.tokenizer.apply_chat_template(
+                entry.messages,
+                tokenize=False,
+                add_generation_prompt=False,
+                chat_template=TEMPLATE,
+            )
+        else:  # knowledge
+            text = entry.content
+
+        encodings = self.tokenizer(
+            text,
+            truncation=True,
+            padding=False,
+            return_tensors="pt",
+        )
+
+        return {
+            "input_ids": encodings.input_ids[0],
+            "attention_mask": encodings.attention_mask[0],
+            "labels": encodings.input_ids[0].clone(),
+        }
+
+
+def collate_fn(batch):
+    max_length = max(len(item["input_ids"]) for item in batch)
+
+    input_ids = torch.full((len(batch), max_length), IGNORE_TOKEN_ID, dtype=torch.long)
+    attention_mask = torch.zeros((len(batch), max_length), dtype=torch.long)
+    labels = torch.full((len(batch), max_length), IGNORE_TOKEN_ID, dtype=torch.long)
+
+    for i, item in enumerate(batch):
+        input_len = len(item["input_ids"])
+        input_ids[i, :input_len] = item["input_ids"]
+        attention_mask[i, :input_len] = item["attention_mask"]
+        labels[i, :input_len] = item["labels"]
+
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels,
+    }
 
 
 class LLMManager:
@@ -127,37 +181,87 @@ class LLMManager:
         return "ok"
 
     def train_on_entries(self, session_name: str, entries: List[CorpusEntry]) -> float:
+        # 确保模型已加载到正确的设备上
         self._load_model_if_not_loaded(session_name)
-        # Prepare data for training
-        chat_entries = [entry for entry in entries if entry.entry_type == "chat"]
-        knowledge_entries = [
-            entry for entry in entries if entry.entry_type == "knowledge"
-        ]
 
-        train_dataset = HeartEchoDataset(
-            chat_entries, knowledge_entries, self.tokenizer, max_len=2048
+        # 创建数据集
+        train_dataset = DynamicHeartEchoDataset(entries, self.tokenizer)
+
+        # 创建数据加载器，batch_size=1 确保每次只处理一个条目
+        train_dataloader = DataLoader(
+            train_dataset,
+            batch_size=1,
+            shuffle=True,  # 随机打乱数据
+            collate_fn=collate_fn,  # 使用自定义的 collate 函数
         )
 
-        training_args = TrainingArguments(
-            output_dir="./results",
-            num_train_epochs=1,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=16,
-            warmup_steps=0,
-            logging_steps=1,
-            learning_rate=5e-6,
-            save_strategy="no",
-        )
+        # 将模型设置为训练模式
+        self.model.train()
 
-        trainer = Trainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=train_dataset,
-        )
+        # 初始化优化器
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=5e-6)
 
-        # Train and get the loss
-        train_result = trainer.train()
-        return train_result.training_loss
+        # 用于累积和计算平均损失
+        total_loss = 0.0
+
+        # 用于当前梯度累积周期的损失
+        accumulated_loss = 0.0
+
+        print("开始训练过程！我们将一步步学习新的知识。")
+        print(f"我们总共有 {len(train_dataloader)} 条数据要学习。")
+        print("我们会每学习16条数据后，就整理一下我们学到的东西。")
+
+        # 遍历数据集
+        for step, batch in enumerate(train_dataloader):
+            print(f"\n--- 正在学习第 {step + 1} 条数据 ---")
+
+            # 将批次数据移动到正确的设备上
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            print("1. 我已经仔细阅读了这条数据。")
+
+            # 前向传播
+            outputs = self.model(**batch)
+            loss = outputs.loss
+            print(
+                f"2. 我尝试理解这条数据，并估算了我的理解程度。我的理解误差是: {loss.item():.4f}"
+            )
+
+            # 累积损失（用于日志记录）
+            accumulated_loss += loss.item()
+            total_loss += loss.item()
+
+            # 归一化损失以考虑梯度累积
+            # 梯度累积是一种在处理大批量数据时模拟大批量效果的技术。在我们的情况下，我们想要模拟一次处理16个样本的效果，但由于内存限制，我们每次只处理1个样本。
+            # 因为我们要累积16步的梯度才进行一次参数更新，所以我们需要将每一步的损失除以16，以保持与一次性处理16个样本时损失的等价性。
+            loss = loss / 16  # TODO 硬编码
+            print("3. 我记录下了这次的学习成果，以便之后整理。")
+
+            # 反向传播
+            loss.backward()
+            print("4. 我思考了一下如何改进我的理解。")
+
+            # 每16步或在最后一步执行优化器步骤
+            if (step + 1) % 16 == 0 or (step + 1) == len(train_dataloader):
+                # 执行优化器步骤
+                optimizer.step()
+                # 清零梯度
+                optimizer.zero_grad()
+
+                print(
+                    f"5. 我已经学习了16条数据（或所有数据），现在我要整理一下我学到的东西。"
+                )
+                print(
+                    f"   在这16条数据中，我的平均理解误差是: {accumulated_loss/min(16, step%16+1):.4f}"
+                )
+                accumulated_loss = 0.0
+            else:
+                print("5. 我还没学够16条数据，我会继续学习下一条。")
+
+        # 计算平均损失
+        average_loss = total_loss / len(train_dataloader)
+        print(f"\n训练结束！在整个学习过程中，我的平均理解误差是: {average_loss:.4f}")
+        print("这个数字越小，说明我学得越好！")
+        return average_loss
 
     def get_error_distribution(self):
         current_session = self.training_session_service.get_current_session()
