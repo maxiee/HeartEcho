@@ -136,7 +136,7 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'Session: ${_currentSession!.name}',
+                  '${_currentSession!.name}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
