@@ -1,14 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from app.core.dependencies import get_corpus_service
+from app.core.dependencies import (
+    get_corpus_service,
+    get_training_loss_service,
+    get_training_session_service,
+)
 from app.schemas.corpus import (
     CorpusCreate,
     CorpusResponse,
     CorpusListResponse,
     CorpusEntryCreate,
     CorpusEntryResponse,
+    LossDistributionResponse,
 )
 from services.corpus_management_service import CorpusManagementService
+from services.training_loss_service import TrainingLossService
+from services.training_session_service import TrainingSessionService
 
 router = APIRouter()
 
@@ -71,3 +78,18 @@ async def get_corpus_entries(
         )
         for entry in entries
     ]
+
+
+@router.get("/loss_distribution", response_model=LossDistributionResponse)
+async def get_loss_distribution(
+    training_loss_service: TrainingLossService = Depends(get_training_loss_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
+    current_session = training_session_service.get_current_session()
+    if not current_session:
+        raise HTTPException(status_code=404, detail="No active training session")
+
+    distribution = training_loss_service.get_loss_distribution(current_session.id)
+    return LossDistributionResponse(distribution=distribution)

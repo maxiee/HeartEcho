@@ -49,3 +49,12 @@ class CorpusEntryResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class LossDistributionItem(BaseModel):
+    lower: str
+    count: int
+
+
+class LossDistributionResponse(BaseModel):
+    distribution: List[LossDistributionItem]

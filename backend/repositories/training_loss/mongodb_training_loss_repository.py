@@ -66,6 +66,11 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
         mongo_losses = MongoTrainingLoss.objects(corpus_entry_id=corpus_entry_id)
         return [self._to_domain(ml) for ml in mongo_losses]
 
+    def count_by_loss_rank(self, session_id: str, loss_rank: str) -> int:
+        return MongoTrainingLoss.objects(
+            session_id=session_id, loss_rank=loss_rank
+        ).count()
+
     def _to_domain(self, mongo_loss: MongoTrainingLoss) -> TrainingLoss:
         return TrainingLoss(
             id=str(mongo_loss.id),

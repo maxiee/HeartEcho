@@ -19,3 +19,7 @@ class TrainingLossRepository(ABC):
     @abstractmethod
     def get_by_corpus_entry_id(self, corpus_entry_id: str) -> List[TrainingLoss]:
         pass
+
+    @abstractmethod
+    def count_by_loss_rank(self, session_id: str, loss_rank: str) -> int:
+        pass

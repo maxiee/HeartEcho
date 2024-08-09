@@ -92,32 +92,6 @@ async def create_training_session():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/error_distribution")
-async def get_error_distribution(
-    session: str = Query(..., description="Training session name")
-):
-    distribution = llm_manager.get_error_distribution(session)
-    ranges = ErrorRange.objects.order_by("lower_bound")
-
-    data = []
-    range_index = 0
-    for range in ranges:
-        count = 0
-        if range_index < len(distribution) and distribution[range_index]["_id"] == str(
-            range.id
-        ):
-            count = distribution[range_index]["count"]
-            range_index += 1
-        data.append(
-            {
-                "range": f"{range.lower_bound:.1f}-{range.upper_bound:.1f}",
-                "count": count,
-            }
-        )
-
-    return {"distribution": data}
-
-
 @app.get("/new_corpus_entries_count")
 async def get_new_corpus_entries_count(
     session: str = Query(..., description="Training session name")
