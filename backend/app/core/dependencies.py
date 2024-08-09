@@ -23,8 +23,7 @@ from services.training_session_service import TrainingSessionService
 @lru_cache()
 def get_corpus_service() -> CorpusManagementService:
     corpus_repo = MongoDBCorpusRepository()
-    corpus_entry_repo = MongoDBCorpusEntryRepository()
-    return CorpusManagementService(corpus_repo, corpus_entry_repo)
+    return CorpusManagementService(corpus_repo, get_corpus_entry_repository())
 
 
 @lru_cache()
@@ -37,7 +36,7 @@ def get_training_session_service():
 def get_model_training_service() -> ModelTrainingService:
     return ModelTrainingService(
         llm_manager=get_llm_manager(),
-        corpus_entry_repo=MongoDBCorpusEntryRepository(),
+        corpus_entry_repo=get_corpus_entry_repository(),
         training_session_service=get_training_session_service(),
         training_loss_service=get_training_loss_service(),
     )
@@ -46,9 +45,17 @@ def get_model_training_service() -> ModelTrainingService:
 @lru_cache()
 def get_training_loss_service():
     training_loss_repo = MongoDBTrainingLossRepository()
-    return TrainingLossService(training_loss_repo=training_loss_repo)
+    return TrainingLossService(
+        training_loss_repo=training_loss_repo,
+        corpus_entry_repo=get_corpus_entry_repository(),
+    )
 
 
 @lru_cache()
 def get_llm_manager():
     return LLMManager()
+
+
+@lru_cache()
+def get_corpus_entry_repository():
+    return MongoDBCorpusEntryRepository()

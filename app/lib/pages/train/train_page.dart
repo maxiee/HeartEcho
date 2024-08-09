@@ -1,4 +1,3 @@
-import 'package:app/models/training_session.dart';
 import 'package:app/pages/train/components/error_distribution_chart.dart';
 import 'package:app/pages/train/components/skill_card.dart';
 import 'package:app/providers/new_corpus_entries_provider.dart';
@@ -85,12 +84,22 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                   : Text(
                       'New corpus entries: ${newCorpusEntriesProvider.count}'),
               const SizedBox(height: 20),
-              SkillCard(
-                title: '熔炼新语料',
-                description: '使用 1x batch 新语料训练模型',
-                onActivate: () => _smeltNewCorpus(context),
-                isActive: isSmeltingInProgress,
-              ),
+              Wrap(
+                children: [
+                  SkillCard(
+                    title: '熔炼新语料',
+                    description: '使用 1x batch 新语料训练模型',
+                    onActivate: () => _smeltNewCorpus(context),
+                    isActive: isSmeltingInProgress,
+                  ),
+                  SkillCard(
+                    title: '新老语料对冲',
+                    description: '新老语料参半，治疗过拟合',
+                    onActivate: () => _smeltNewOld(context),
+                    isActive: isSmeltingInProgress,
+                  ),
+                ],
+              )
             ],
           ),
         ),
@@ -137,46 +146,42 @@ class _TrainPageContentState extends State<_TrainPageContent> {
     }
   }
 
-  Future<void> _startNewTrainingSession(BuildContext context) async {
+  Future<void> _smeltNewOld(BuildContext context) async {
     final globalSessionProvider =
         Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
-    try {
-      final result = await API.createNewTrainingSession(
-          'Session_${DateTime.now().millisecondsSinceEpoch}',
-          'Qwen/Qwen2-1.5B-Instruct');
-      globalSessionProvider.startSession(result);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('New training session started')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error starting new session: $e')),
-        );
-      }
-    }
-  }
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context, listen: false);
 
-  Future<void> _loadTrainingSession(BuildContext context) async {
-    final globalSessionProvider =
-        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    setState(() {
+      isSmeltingInProgress = true;
+    });
+
     try {
-      final TrainingSession loadedSession = await API
-          .loadTrainingSession(globalSessionProvider.currentSession!.id);
-      globalSessionProvider.startSession(loadedSession);
+      final result =
+          await API.smeltNewOld(globalSessionProvider.currentSession!.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Model $selectedModel loaded successfully')),
+          SnackBar(
+              content:
+                  Text('New old smelting completed. Loss: ${result['loss']}')),
         );
       }
+      // Refresh the error distribution and new corpus entries count
+      await newCorpusEntriesProvider
+          .fetchNewCorpusEntriesCount(globalSessionProvider.currentSession!);
+      setState(() {
+        _refreshTrigger++; // Trigger a refresh of the ErrorDistributionChart
+      });
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading model: $e')),
+          SnackBar(content: Text('Error smelting new old: $e')),
         );
       }
+    } finally {
+      setState(() {
+        isSmeltingInProgress = false;
+      });
     }
   }
 }

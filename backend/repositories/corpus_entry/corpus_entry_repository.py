@@ -9,6 +9,10 @@ class CorpusEntryRepository(ABC):
         pass
 
     @abstractmethod
+    def get_entries_by_ids(self, entry_ids: List[str]) -> List[CorpusEntry]:
+        pass
+
+    @abstractmethod
     def save(self, entry: CorpusEntry) -> CorpusEntry:
         pass
 

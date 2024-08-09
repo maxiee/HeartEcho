@@ -1,25 +1,17 @@
-import json
 import os
 import time
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Dict, Any
 
 from app.core.dependencies import (
     get_llm_manager,
     get_model_training_service,
     get_training_session_service,
 )
-from domain.corpus import CorpusEntry
 from llm_manager import LLMManager
 
 import logging
-from repositories.corpus.mongodb_corpus_repository import MongoDBCorpusRepository
-from repositories.corpus_entry.mongodb_corpus_entry_repository import (
-    MongoDBCorpusEntryRepository,
-)
-from services.corpus_management_service import CorpusManagementService
 import app.api.routes.corpus as corpus_routes
 import app.api.routes.sessions as sessions_routes
 from app.core.config import settings
@@ -73,6 +65,21 @@ async def smelt_new_corpus(
         raise HTTPException(status_code=404, detail="Training session not found")
 
     result = model_training_service.smelt_new_corpus()
+    return result
+
+
+@app.post("/smelt_new_old")
+async def smelt_new_old(
+    model_training_service: ModelTrainingService = Depends(get_model_training_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
+    session = training_session_service.get_current_session()
+    if not session:
+        raise HTTPException(status_code=404, detail="Training session not found")
+
+    result = model_training_service.smelt_new_old()
     return result
 
 

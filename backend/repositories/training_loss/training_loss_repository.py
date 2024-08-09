@@ -27,3 +27,15 @@ class TrainingLossRepository(ABC):
     @abstractmethod
     def count_by_session_id(self, session_id: str) -> int:
         pass
+
+    @abstractmethod
+    def get_highest_loss_entries(
+        self, session_id: str, limit: int
+    ) -> List[TrainingLoss]:
+        pass
+
+    @abstractmethod
+    def get_lowest_loss_entries(
+        self, session_id: str, limit: int
+    ) -> List[TrainingLoss]:
+        pass

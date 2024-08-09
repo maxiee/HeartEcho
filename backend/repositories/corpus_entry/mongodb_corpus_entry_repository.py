@@ -39,6 +39,10 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         mongo_entry = MongoCorpusEntry.objects(id=entry_id).first()
         return self._to_domain(mongo_entry) if mongo_entry else None
 
+    def get_entries_by_ids(self, entry_ids: List[str]) -> List[CorpusEntry]:
+        mongo_entries = MongoCorpusEntry.objects(id__in=entry_ids)
+        return [self._to_domain(me) for me in mongo_entries]
+
     def save(self, entry: CorpusEntry) -> CorpusEntry:
         mongo_entry = self._to_mongo(entry)
         mongo_entry.save()

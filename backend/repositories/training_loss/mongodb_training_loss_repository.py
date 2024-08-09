@@ -74,6 +74,26 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
     def count_by_session_id(self, session_id: str) -> int:
         return MongoTrainingLoss.objects(session_id=session_id).count()
 
+    def get_highest_loss_entries(
+        self, session_id: str, limit: int
+    ) -> List[TrainingLoss]:
+        mongo_losses = (
+            MongoTrainingLoss.objects(session_id=session_id)
+            .order_by("-loss_value")
+            .limit(limit)
+        )
+        return [self._to_domain(ml) for ml in mongo_losses]
+
+    def get_lowest_loss_entries(
+        self, session_id: str, limit: int
+    ) -> List[TrainingLoss]:
+        mongo_losses = (
+            MongoTrainingLoss.objects(session_id=session_id)
+            .order_by("loss_value")
+            .limit(limit)
+        )
+        return [self._to_domain(ml) for ml in mongo_losses]
+
     def _to_domain(self, mongo_loss: MongoTrainingLoss) -> TrainingLoss:
         return TrainingLoss(
             id=str(mongo_loss.id),

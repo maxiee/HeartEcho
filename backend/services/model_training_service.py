@@ -79,3 +79,52 @@ class ModelTrainingService:
             "loss": loss,
             "entries_trained": len(selected_entries),
         }
+
+    def smelt_new_old(self, batch_size: int = 16) -> dict:
+        assert (
+            self.training_session_service.get_current_session()
+        ), "No active training session"
+        self.llm_manager._load_model_if_not_loaded(
+            self.training_session_service.get_current_session().name
+        )
+        # Randomly sample batch_size entries
+        selected_entries = self.corpus_entry_repo.sample_new_entries(
+            batch_size / 2,
+            self.corpus_entry_repo.count(),
+            self.training_session_service.get_current_session().id,
+        )
+
+        if len(selected_entries) < batch_size / 2:
+            highest_loss_entries = self.training_loss_service.get_highest_loss_entries(
+                self.training_session_service.get_current_session().id,
+                batch_size / 2 - len(selected_entries),
+            )
+            selected_entries += highest_loss_entries
+
+        total_tokens = sum(self._count_tokens(entry) for entry in selected_entries)
+
+        lowest_loss_entries = self.training_loss_service.get_lowest_loss_entries(
+            self.training_session_service.get_current_session().id,
+            int(batch_size / 2),
+        )
+        selected_entries += lowest_loss_entries
+
+        # Train the model
+        loss = self.llm_manager.train_on_entries(
+            self.training_session_service.get_current_session().name, selected_entries
+        )
+
+        self.training_session_service.update_tokens_trained(total_tokens)
+
+        for entry in selected_entries:
+            self.training_loss_service.update_loss(
+                entry.id,
+                loss,
+                self.training_session_service.get_current_session(),
+            )
+
+        return {
+            "message": "New corpus smelting completed",
+            "loss": loss,
+            "entries_trained": len(selected_entries),
+        }

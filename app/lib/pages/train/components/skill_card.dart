@@ -17,10 +17,12 @@ class SkillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
+      child: Container(
+        width: 250,
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(title, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
