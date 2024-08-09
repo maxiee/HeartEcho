@@ -10,7 +10,7 @@ class TrainingLoss:
     session_id: str
     timestamp: datetime
     loss_value: float
-    loss_rank: int
+    loss_rank: str
 
     def __post_init__(self):
         if not isinstance(self.timestamp, datetime):
@@ -21,4 +21,4 @@ class TrainingLoss:
         if loss < 0:
             return 0.0
         rank = int(loss / 0.5) * 0.5
-        return min(rank, 10.0)
+        return f"{min(rank, 10.0):.1f}"

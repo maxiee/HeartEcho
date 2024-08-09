@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
+const PASS_SAVE_MODEL_ON_CLOSE = true;
+
 void main() {
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (context) => GlobalProvider()),
@@ -102,6 +104,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowClose() async {
+    if (PASS_SAVE_MODEL_ON_CLOSE) {
+      await windowManager.destroy();
+    }
     bool _isPreventClose = await windowManager.isPreventClose();
     if (_isPreventClose) {
       // Show a dialog to inform the user that the app is saving and closing

@@ -18,8 +18,7 @@ class MongoTrainingLoss(Document):
     session_id = StringField(required=True)
     timestamp = DateTimeField(required=True)
     loss_value = FloatField(required=True)
-    loss_rank = IntField(required=True)
-
+    loss_rank = StringField(required=True, index=True)
     meta = {"collection": "training_losses"}
 
 
