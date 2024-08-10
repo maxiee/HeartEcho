@@ -13,6 +13,10 @@ from app.schemas.corpus import (
     CorpusEntryResponse,
     LossDistributionResponse,
 )
+from repositories.corpus_entry.mongodb_corpus_entry_repository import MongoCorpusEntry
+from repositories.training_loss.mongodb_training_loss_repository import (
+    MongoTrainingLoss,
+)
 from services.corpus_management_service import CorpusManagementService
 from services.training_loss_service import TrainingLossService
 from services.training_session_service import TrainingSessionService
@@ -114,3 +118,40 @@ async def get_new_corpus_entries_count(
     new_entries_count = max(0, total_corpus_entries - trained_entries_count)
 
     return {"new_entries_count": new_entries_count}
+
+
+@router.get("/clean-long-entries")
+async def clean_long_entries(
+    corpus_service: CorpusManagementService = Depends(get_corpus_service),
+    training_loss_service: TrainingLossService = Depends(get_training_loss_service),
+):
+    try:
+        # Find MongoCorpusEntry documents with content length > 2048
+        long_entries = MongoCorpusEntry.objects(
+            content__exists=True,
+            __raw__={"$expr": {"$gt": [{"$strLenCP": "$content"}, 2048]}},
+        )
+
+        deleted_entries_count = 0
+        deleted_losses_count = 0
+
+        for entry in long_entries:
+            # Delete associated MongoTrainingLoss documents
+            deleted_losses = MongoTrainingLoss.objects(
+                corpus_entry_id=entry.id
+            ).delete()
+            deleted_losses_count += deleted_losses
+
+            # Delete the MongoCorpusEntry
+            entry.delete()
+            deleted_entries_count += 1
+
+        return {
+            "message": "Cleanup completed successfully",
+            "deleted_entries_count": deleted_entries_count,
+            "deleted_losses_count": deleted_losses_count,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An error occurred during cleanup: {str(e)}"
+        )
