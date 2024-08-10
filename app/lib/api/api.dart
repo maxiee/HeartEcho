@@ -278,6 +278,19 @@ class ApiClient {
       throw Exception('Failed to smelt new old: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> trainSingleEntry(String entryId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/train_single_entry/$entryId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to train single entry: ${response.body}');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

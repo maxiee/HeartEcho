@@ -83,6 +83,20 @@ async def smelt_new_old(
     return result
 
 
+@app.post("/train_single_entry/{entry_id}")
+async def train_single_entry(
+    entry_id: str,
+    model_training_service: ModelTrainingService = Depends(get_model_training_service),
+):
+    try:
+        result = model_training_service.train_single_entry(entry_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/create_training_session")
 async def create_training_session():
     try:

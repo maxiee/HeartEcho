@@ -128,3 +128,39 @@ class ModelTrainingService:
             "loss": loss,
             "entries_trained": len(selected_entries),
         }
+
+    def train_single_entry(self, entry_id: str) -> dict:
+        assert (
+            self.training_session_service.get_current_session()
+        ), "No active training session"
+        self.llm_manager._load_model_if_not_loaded(
+            self.training_session_service.get_current_session().name
+        )
+
+        # 获取指定的语料条目
+        entry = self.corpus_entry_repo.get_by_id(entry_id)
+        if not entry:
+            raise ValueError(f"Corpus entry with id {entry_id} not found")
+
+        # 训练模型
+        loss = self.llm_manager.train_on_entries(
+            self.training_session_service.get_current_session().name, [entry]
+        )
+
+        # 更新已训练的token数量
+        tokens_count = self._count_tokens(entry)
+        self.training_session_service.update_tokens_trained(tokens_count)
+
+        # 更新训练损失
+        self.training_loss_service.update_loss(
+            entry.id,
+            loss,
+            self.training_session_service.get_current_session(),
+        )
+
+        return {
+            "message": "Single entry training completed",
+            "loss": loss,
+            "entry_id": entry_id,
+            "tokens_trained": tokens_count,
+        }

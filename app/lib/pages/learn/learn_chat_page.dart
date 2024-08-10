@@ -13,7 +13,7 @@ class LearnChatPage extends StatefulWidget {
 }
 
 class _LearnChatPageState extends State<LearnChatPage> {
-  List<Map<String, String>> messages = [];
+  List<Message> messages = [];
   TextEditingController contentController = TextEditingController();
   String currentRole = 'user';
 
@@ -21,7 +21,7 @@ class _LearnChatPageState extends State<LearnChatPage> {
   void initState() {
     super.initState();
     if (widget.entry != null) {
-      messages = List<Map<String, String>>.from(widget.entry!.messages ?? []);
+      messages = widget.entry!.messages ?? [];
     }
   }
 
@@ -52,8 +52,8 @@ class _LearnChatPageState extends State<LearnChatPage> {
               itemBuilder: (context, index) {
                 final message = messages[index];
                 return ListTile(
-                  leading: Text(message['role']!),
-                  title: Text(message['content']!),
+                  leading: Text(message.role),
+                  title: Text(message.content),
                 );
               },
             ),
@@ -78,10 +78,8 @@ class _LearnChatPageState extends State<LearnChatPage> {
                 icon: const Icon(Icons.send),
                 onPressed: () {
                   setState(() {
-                    messages.add({
-                      'role': currentRole,
-                      'content': contentController.text,
-                    });
+                    messages.add(Message(
+                        role: currentRole, content: contentController.text));
                     contentController.clear();
                   });
                 },

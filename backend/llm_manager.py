@@ -218,6 +218,10 @@ class LLMManager:
             print(
                 f"\n--- 正在学习第 {step + 1} 条数据 (Token 长度: {token_length}) ---"
             )
+            # 每批只有1个条目，打印出这个条目的内容的前100个 token的字符串表示
+            print(
+                f"内容: {self.tokenizer.decode(batch['input_ids'][0, :100], skip_special_tokens=True)}"
+            )
 
             # 更新最大 token 长度
             if token_length > max_token_length:

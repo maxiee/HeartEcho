@@ -189,6 +189,10 @@ class _CorpusDetailPageState extends State<CorpusDetailPage> {
                 subtitle: Text(entry.entryType == 'chat'
                     ? '${entry.messages?.length} messages'
                     : '${entry.content?.substring(0, 50)}...'),
+                trailing: ElevatedButton(
+                  child: const Text('Train'),
+                  onPressed: () => _trainEntry(context, entry),
+                ),
                 onTap: () => _editEntry(context, entry),
               );
             },
@@ -197,6 +201,45 @@ class _CorpusDetailPageState extends State<CorpusDetailPage> {
         },
       ),
     );
+  }
+
+  void _trainEntry(BuildContext context, CorpusEntry entry) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
+    try {
+      final result = await API.trainSingleEntry(entry.id);
+      Navigator.of(context).pop(); // 关闭加载对话框
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Training Complete'),
+            content: Text(
+                'Loss: ${result['loss']}\nTokens trained: ${result['tokens_trained']}'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // 关闭加载对话框
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error training entry: $e')),
+      );
+    }
   }
 
   void _showAddEntryDialog(BuildContext context) {
