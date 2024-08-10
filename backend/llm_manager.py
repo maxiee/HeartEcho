@@ -162,38 +162,6 @@ class LLMManager:
         )
         return response.strip()
 
-    def learn(self, chat_entries, knowledge_entries):
-        if not self.model or not self.tokenizer:
-            raise ValueError("Model not loaded. Call load_model() first.")
-
-        chats = [entry for entry in chat_entries if entry.entry_type == "chat"]
-        knowledges = [
-            entry for entry in knowledge_entries if entry.entry_type == "knowledge"
-        ]
-        train_dataset = HeartEchoDataset(
-            chats, knowledges, self.tokenizer, max_len=2048
-        )
-
-        training_args = TrainingArguments(
-            output_dir="./results",
-            num_train_epochs=1,
-            per_device_train_batch_size=4,
-            gradient_accumulation_steps=4,
-            warmup_steps=10,
-            weight_decay=0.01,
-            logging_dir="./logs",
-            learning_rate=5e-5,
-        )
-
-        trainer = Trainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=train_dataset,
-        )
-
-        trainer.train()
-        return "ok"
-
     def _count_tokens(self, entry: CorpusEntry) -> int:
         if not self.tokenizer:
             raise ValueError("Tokenizer is not initialized. Call load_model() first.")
