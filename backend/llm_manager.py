@@ -194,6 +194,24 @@ class LLMManager:
         trainer.train()
         return "ok"
 
+    def _count_tokens(self, entry: CorpusEntry) -> int:
+        if not self.tokenizer:
+            raise ValueError("Tokenizer is not initialized. Call load_model() first.")
+
+        if entry.entry_type == "knowledge":
+            return len(self.tokenizer.encode(entry.content))
+        elif entry.entry_type == "chat":
+            # Apply chat template and count tokens
+            formatted_chat = self.tokenizer.apply_chat_template(
+                entry.messages,
+                tokenize=False,
+                add_generation_prompt=False,
+                chat_template=TEMPLATE,
+            )
+            return len(self.tokenizer.encode(formatted_chat))
+        else:
+            raise ValueError(f"Unknown entry type: {entry.entry_type}")
+
     def train_on_entries(self, session_name: str, entries: List[CorpusEntry]) -> float:
         # 确保模型已加载到正确的设备上
         self._load_model_if_not_loaded(session_name)
@@ -215,12 +233,9 @@ class LLMManager:
         # 初始化优化器
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-5)
 
-        # 用于累积和计算平均损失
-        total_loss = 0.0
-
-        # 用于当前梯度累积周期的损失
-        accumulated_loss = 0.0
-
+        total_loss = 0.0  # 用于累积和计算平均损失
+        accumulated_loss = 0.0  # 用于当前梯度累积周期的损失
+        total_tokens = sum(self._count_tokens(entry) for entry in entries)
         max_token_length = 0
         max_token_entry = None
 
@@ -254,19 +269,19 @@ class LLMManager:
                     f"2. 我尝试理解这条数据，并估算了我的理解程度。我的理解误差是: {loss.item():.4f}"
                 )
 
-                # 累积损失（用于日志记录）
-                accumulated_loss += loss.item()
-                total_loss += loss.item()
-
-                # 归一化损失以考虑梯度累积
-                # 梯度累积是一种在处理大批量数据时模拟大批量效果的技术。在我们的情况下，我们想要模拟一次处理16个样本的效果，但由于内存限制，我们每次只处理1个样本。
-                # 因为我们要累积16步的梯度才进行一次参数更新，所以我们需要将每一步的损失除以16，以保持与一次性处理16个样本时损失的等价性。
-                loss = loss / 16  # TODO 硬编码
-                print("3. 我记录下了这次的学习成果，以便之后整理。")
+                # Calculate the gradient weight based on token proportion
+                gradient_weight = token_length / total_tokens
+                weighted_loss = loss * gradient_weight
+                print(
+                    f"3. Weighted loss (based on token proportion): {weighted_loss.item():.4f}"
+                )
 
                 # 反向传播
-                loss.backward()
-                print("4. 我思考了一下如何改进我的理解。")
+                weighted_loss.backward()
+                print("4. Backward pass completed.")
+
+                accumulated_loss += loss.item() * gradient_weight
+                total_loss += loss.item() * gradient_weight
 
                 # 每16步或在最后一步执行优化器步骤
                 if (step + 1) % 16 == 0 or (step + 1) == len(train_dataloader):
@@ -279,7 +294,7 @@ class LLMManager:
                         f"5. 我已经学习了16条数据（或所有数据），现在我要整理一下我学到的东西。"
                     )
                     print(
-                        f"   在这16条数据中，我的平均理解误差是: {accumulated_loss/min(16, step%16+1):.4f}"
+                        f"   在这16条数据中，我的平均理解误差是: {accumulated_loss:.4f}"
                     )
                     accumulated_loss = 0.0
                 else:
@@ -296,7 +311,7 @@ class LLMManager:
                     raise e
 
         # 计算平均损失
-        average_loss = total_loss / len(train_dataloader)
+        average_loss = total_loss
         print(f"\n训练结束！在整个学习过程中，我的平均理解误差是: {average_loss:.4f}")
         print("这个数字越小，说明我学得越好！")
         print(
