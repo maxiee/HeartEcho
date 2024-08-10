@@ -6,6 +6,7 @@ from mongoengine import (
     DateTimeField,
     FloatField,
     NotUniqueError,
+    Q,
 )
 from app.core.db import DB
 from domain.training_loss import TrainingLoss
@@ -14,7 +15,7 @@ from .training_loss_repository import TrainingLossRepository
 
 class MongoTrainingLoss(Document):
     id = StringField(primary_key=True)
-    corpus_entry_id = StringField(required=True, unique=True)
+    corpus_entry_id = StringField(required=True)
     session_id = StringField(required=True)
     timestamp = DateTimeField(required=True)
     loss_value = FloatField(required=True)
@@ -27,32 +28,37 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
         DB.init()
 
     def save(self, training_loss: TrainingLoss) -> TrainingLoss:
-        mongo_loss = MongoTrainingLoss(
-            id=training_loss.id,
-            loss_rank=training_loss.loss_rank,
-            corpus_entry_id=training_loss.corpus_entry_id,
-            session_id=training_loss.session_id,
-            timestamp=training_loss.timestamp,
-            loss_value=training_loss.loss_value,
-        )
-        try:
-            mongo_loss.save()
-            print("Training loss saved")
-        except NotUniqueError:
-            print("Training loss already exists")
-            # If the document already exists, update it
-            existing_loss = MongoTrainingLoss.objects(
+        # 查询是否存在匹配的记录
+        existing_loss = MongoTrainingLoss.objects(
+            Q(corpus_entry_id=training_loss.corpus_entry_id)
+            & Q(session_id=training_loss.session_id)
+        ).first()
+
+        if existing_loss:
+            # 如果存在，更新记录
+            existing_loss.loss_rank = training_loss.loss_rank
+            existing_loss.timestamp = training_loss.timestamp
+            existing_loss.loss_value = training_loss.loss_value
+            existing_loss.save()
+            print(
+                f"Training loss updated for corpus_entry_id: {training_loss.corpus_entry_id}, session_id: {training_loss.session_id}"
+            )
+            return self._to_domain(existing_loss)
+        else:
+            # 如果不存在，创建新记录
+            mongo_loss = MongoTrainingLoss(
+                id=training_loss.id,
+                loss_rank=training_loss.loss_rank,
                 corpus_entry_id=training_loss.corpus_entry_id,
                 session_id=training_loss.session_id,
-            ).first()
-            if existing_loss:
-                existing_loss.loss_rank = training_loss.loss_rank
-                existing_loss.timestamp = training_loss.timestamp
-                existing_loss.loss_value = training_loss.loss_value
-                existing_loss.save()
-                print("Training loss update successful")
-                return self._to_domain(existing_loss)
-        return self._to_domain(mongo_loss)
+                timestamp=training_loss.timestamp,
+                loss_value=training_loss.loss_value,
+            )
+            mongo_loss.save()
+            print(
+                f"New training loss created for corpus_entry_id: {training_loss.corpus_entry_id}, session_id: {training_loss.session_id}"
+            )
+            return self._to_domain(mongo_loss)
 
     def get_by_id(self, training_loss_id: str) -> Optional[TrainingLoss]:
         mongo_loss = MongoTrainingLoss.objects(id=training_loss_id).first()
