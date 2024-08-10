@@ -15,13 +15,16 @@ class LearnChatPage extends StatefulWidget {
 class _LearnChatPageState extends State<LearnChatPage> {
   List<Message> messages = [];
   TextEditingController contentController = TextEditingController();
-  String currentRole = 'user';
+  String currentRole = 'system';
 
   @override
   void initState() {
     super.initState();
     if (widget.entry != null) {
       messages = widget.entry!.messages ?? [];
+    } else {
+      // 如果是新建对话，默认添加系统消息
+      contentController.text = "你是一个有用的助手。";
     }
   }
 
