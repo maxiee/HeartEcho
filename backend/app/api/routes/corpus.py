@@ -49,12 +49,34 @@ async def get_corpora(
 
 @router.post("/entry", response_model=CorpusEntryResponse)
 async def add_corpus_entry(
-    corpus_id: str, entry: CorpusEntryCreate, service=Depends(get_corpus_service)
+    corpus_id: str,
+    entry: CorpusEntryCreate,
+    service: CorpusManagementService = Depends(get_corpus_service),
 ):
     try:
-        created_entry = service.add_entry_to_corpus(
-            corpus_id=corpus_id, content=entry.content, entry_type=entry.entry_type
-        )
+        if entry.entry_type == "knowledge":
+            if not entry.content:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Content is required for knowledge type entries",
+                )
+            created_entry = service.add_entry_to_corpus(
+                corpus_id=corpus_id, content=entry.content, entry_type=entry.entry_type
+            )
+        elif entry.entry_type == "chat":
+            if not entry.messages:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Messages are required for chat type entries",
+                )
+            created_entry = service.add_entry_to_corpus(
+                corpus_id=corpus_id,
+                entry_type=entry.entry_type,
+                messages=entry.messages,
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Invalid entry type")
+
         return CorpusEntryResponse(**created_entry.__dict__)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

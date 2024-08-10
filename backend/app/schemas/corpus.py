@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, Optional, List
 from datetime import datetime
 
@@ -28,13 +28,22 @@ class CorpusListResponse(BaseModel):
     limit: int
 
 
-class CorpusEntryBase(BaseModel):
-    content: str
-    entry_type: str
+class CorpusEntryCreate(BaseModel):
+    entry_type: str = Field(..., description="Type of the entry: 'chat' or 'knowledge'")
+    content: Optional[str] = Field(
+        None, description="Content for knowledge type entries"
+    )
+    messages: Optional[List[Dict[str, str]]] = Field(
+        None, description="Messages for chat type entries"
+    )
 
-
-class CorpusEntryCreate(CorpusEntryBase):
-    pass
+    class Config:
+        schema_extra = {
+            "example": {
+                "entry_type": "knowledge",
+                "content": "This is a knowledge entry",
+            }
+        }
 
 
 class CorpusEntryResponse(BaseModel):
