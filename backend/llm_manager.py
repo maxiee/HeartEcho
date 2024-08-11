@@ -73,9 +73,12 @@ class DynamicHeartEchoDataset(Dataset):
             return_tensors="pt",
         )
 
+        # 修改：创建 attention_mask
+        attention_mask = torch.ones_like(encodings.input_ids[0])
+
         return {
             "input_ids": encodings.input_ids[0],
-            "attention_mask": encodings.attention_mask[0],
+            "attention_mask": attention_mask,
             "labels": encodings.input_ids[0].clone(),
         }
 
@@ -113,6 +116,12 @@ class LLMManager:
             model_path, torch_dtype="auto", device_map="auto"
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+        # 修改：设置 pad_token_id
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.model.config.pad_token_id = self.model.config.eos_token_id
+
         self.model.to(self.device)
 
     def _load_model_if_not_loaded(self, session_name: str):
@@ -136,8 +145,14 @@ class LLMManager:
             history, tokenize=False, add_generation_prompt=True
         )
         model_inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
+        input_ids = self.tokenizer.encode(text, return_tensors="pt")
+        attention_mask = torch.ones(
+            input_ids.shape, dtype=torch.long, device=self.device
+        )
         generated_ids = self.model.generate(
             model_inputs.input_ids,
+            pad_token_id=self.tokenizer.eos_token_id,
+            attention_mask=attention_mask,
             max_new_tokens=2048,
             do_sample=True,
             # Temperature (温度)

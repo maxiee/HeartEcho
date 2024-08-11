@@ -188,7 +188,7 @@ class _CorpusDetailPageState extends State<CorpusDetailPage> {
                 title: Text(entry.entryType),
                 subtitle: Text(entry.entryType == 'chat'
                     ? '${entry.messages?.length} messages'
-                    : '${entry.content?.substring(0, 50)}...'),
+                    : '${(entry.content != null && entry.content!.length > 50) ? entry.content?.substring(0, 50) : entry.content}...'),
                 trailing: ElevatedButton(
                   child: const Text('Train'),
                   onPressed: () => _trainEntry(context, entry),
