@@ -67,16 +67,21 @@ class ModelTrainingService:
 
         self.training_session_service.update_tokens_trained(total_tokens)
 
+        # Calculate and update individual losses
+        total_loss = 0
         for entry in selected_entries:
+            entry_loss = self.llm_manager.calculate_entry_loss(entry)
             self.training_loss_service.update_loss(
                 entry.id,
-                loss,
+                entry_loss,
                 self.training_session_service.get_current_session(),
             )
+            total_loss += entry_loss
 
+        actual_average_loss = total_loss / len(selected_entries)
         return {
             "message": "New corpus smelting completed",
-            "loss": loss,
+            "loss": actual_average_loss,
             "entries_trained": len(selected_entries),
         }
 
@@ -116,16 +121,21 @@ class ModelTrainingService:
 
         self.training_session_service.update_tokens_trained(total_tokens)
 
+        # Calculate and update individual losses
+        total_loss = 0
         for entry in selected_entries:
+            entry_loss = self.llm_manager.calculate_entry_loss(entry)
             self.training_loss_service.update_loss(
                 entry.id,
-                loss,
+                entry_loss,
                 self.training_session_service.get_current_session(),
             )
+            total_loss += entry_loss
 
+        actual_average_loss = total_loss / len(selected_entries)
         return {
             "message": "New corpus smelting completed",
-            "loss": loss,
+            "loss": actual_average_loss,
             "entries_trained": len(selected_entries),
         }
 
@@ -152,15 +162,17 @@ class ModelTrainingService:
         self.training_session_service.update_tokens_trained(tokens_count)
 
         # 更新训练损失
+        # Calculate and update the entry's loss
+        entry_loss = self.llm_manager.calculate_entry_loss(entry)
         self.training_loss_service.update_loss(
             entry.id,
-            loss,
+            entry_loss,
             self.training_session_service.get_current_session(),
         )
 
         return {
             "message": "Single entry training completed",
-            "loss": loss,
+            "loss": entry_loss,
             "entry_id": entry_id,
             "tokens_trained": tokens_count,
         }

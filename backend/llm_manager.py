@@ -306,6 +306,54 @@ class LLMManager:
         )
         return average_loss
 
+    def calculate_entry_loss(self, entry: CorpusEntry) -> float:
+        self.model.eval()  # Set the model to evaluation mode
+        with torch.no_grad():
+            if entry.entry_type == "knowledge":
+                text = entry.content
+            elif entry.entry_type == "chat":
+                text = self.tokenizer.apply_chat_template(
+                    entry.messages,
+                    tokenize=False,
+                    add_generation_prompt=False,
+                    chat_template=TEMPLATE,
+                )
+            else:
+                raise ValueError(f"Unknown entry type: {entry.entry_type}")
+
+            # Calculate the token count of the input
+            input_ids = self.tokenizer.encode(text, add_special_tokens=True)
+            token_count = len(input_ids)
+
+            # Set max_length to the minimum of token count and model's max length
+            max_length = min(token_count, self.tokenizer.model_max_length)
+
+            inputs = self.tokenizer(
+                text,
+                return_tensors="pt",
+                truncation=True,
+                max_length=max_length,
+                padding="max_length",
+            )
+
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            labels = inputs["input_ids"].clone()
+
+            # If the input was truncated, adjust the labels
+            # 对于被截断的输入，我们将最后一个 token 的 label 设置为 -100。这是因为最后一个 token 可能是不完整的，我们不希望模型为预测这个不完整的 token 而受到惩罚。
+            # 在 PyTorch 中，特别是在处理序列任务时，-100 被广泛用作忽略特定位置损失计算的标志。这是 PyTorch 内部的一个约定。
+            # Hugging Face Transformers 库的实现：Hugging Face Transformers 库遵循了这个约定。在其实现中，-100 被用作一个特殊的标记，表示在计算损失时应该忽略这个位置。
+            if token_count > max_length:
+                print(
+                    f"Warning: Input was truncated from {token_count} to {max_length} tokens."
+                )
+                labels[:, -1] = -100  # Ignore loss for the last token if truncated
+
+            outputs = self.model(**inputs, labels=labels)
+            loss = outputs.loss.item()
+
+        return loss
+
     def get_error_distribution(self):
         current_session = self.training_session_service.get_current_session()
         if not current_session:
