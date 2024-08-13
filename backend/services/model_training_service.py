@@ -221,7 +221,7 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().name,
             filtered_entries,
             reverse_gradient=True,
-            learning_rate=1e-6,
+            learning_rate=5e-6,
         )
 
         self.training_session_service.update_tokens_trained(total_tokens)
