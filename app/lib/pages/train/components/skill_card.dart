@@ -26,7 +26,7 @@ class SkillCard extends StatelessWidget {
           children: [
             Text(title, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text(description),
+            SizedBox(height: 48, child: Text(description)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: isActive ? null : onActivate,

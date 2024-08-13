@@ -68,9 +68,13 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
         mongo_losses = MongoTrainingLoss.objects(session_id=session_id)
         return [self._to_domain(ml) for ml in mongo_losses]
 
-    def get_by_corpus_entry_id(self, corpus_entry_id: str) -> List[TrainingLoss]:
-        mongo_losses = MongoTrainingLoss.objects(corpus_entry_id=corpus_entry_id)
-        return [self._to_domain(ml) for ml in mongo_losses]
+    def get_by_corpus_entry_id_and_session_id(
+        self, corpus_entry_id: str, session_id: str
+    ) -> TrainingLoss:
+        mongo_losse = MongoTrainingLoss.objects(
+            corpus_entry_id=corpus_entry_id, session_id=session_id
+        ).first()
+        return self._to_domain(mongo_losse)
 
     def count_by_loss_rank(self, session_id: str, loss_rank: str) -> int:
         return MongoTrainingLoss.objects(

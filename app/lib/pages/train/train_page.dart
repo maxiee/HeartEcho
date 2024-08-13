@@ -100,7 +100,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                   ),
                   SkillCard(
                     title: '治疗过拟合',
-                    description: '增加低误差语料损失，缓解过拟合',
+                    description: '低误差语料（误差<1）反向训练，缓解过拟合',
                     onActivate: () => _treatOverfitting(context),
                     isActive: isSmeltingInProgress,
                   ),

@@ -17,7 +17,9 @@ class TrainingLossRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_corpus_entry_id(self, corpus_entry_id: str) -> List[TrainingLoss]:
+    def get_by_corpus_entry_id_and_session_id(
+        self, corpus_entry_id: str, session_id: str
+    ) -> List[TrainingLoss]:
         pass
 
     @abstractmethod
@@ -35,7 +37,5 @@ class TrainingLossRepository(ABC):
         pass
 
     @abstractmethod
-    def get_lowest_loss_entries(
-        self, session_id: str, limit: int
-    ) -> List[TrainingLoss]:
+    def get_lowest_loss_entries(self, session_id: str, limit: int) -> TrainingLoss:
         pass

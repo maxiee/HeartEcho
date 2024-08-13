@@ -190,12 +190,28 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().id, batch_size
         )
 
-        total_tokens = sum(self._count_tokens(entry) for entry in lowest_loss_entries)
+        # Filter entries with loss < 1
+        filtered_entries = [
+            entry
+            for entry in lowest_loss_entries
+            if self.training_loss_service.get_losses_for_corpus_entry(
+                entry.id, self.training_session_service.get_current_session().id
+            ).loss_value
+            < 1.0
+        ]
+
+        if not filtered_entries:
+            return {
+                "message": "No entries with loss < 1 found for overfitting treatment",
+                "entries_trained": 0,
+            }
+
+        total_tokens = sum(self._count_tokens(entry) for entry in filtered_entries)
 
         # 训练模型，但是反向梯度
         loss = self.llm_manager.train_on_entries(
             self.training_session_service.get_current_session().name,
-            lowest_loss_entries,
+            filtered_entries,
             reverse_gradient=True,
         )
 
@@ -203,7 +219,7 @@ class ModelTrainingService:
 
         # 重新计算和更新个别损失
         total_loss = 0
-        for entry in lowest_loss_entries:
+        for entry in filtered_entries:
             entry_loss = self.llm_manager.calculate_entry_loss(entry)
             self.training_loss_service.update_loss(
                 entry.id,
@@ -212,9 +228,9 @@ class ModelTrainingService:
             )
             total_loss += entry_loss
 
-        actual_average_loss = total_loss / len(lowest_loss_entries)
+        actual_average_loss = total_loss / len(filtered_entries)
         return {
             "message": "Overfitting treatment completed",
             "loss": actual_average_loss,
-            "entries_treated": len(lowest_loss_entries),
+            "entries_treated": len(filtered_entries),
         }

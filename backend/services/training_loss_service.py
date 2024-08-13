@@ -37,8 +37,12 @@ class TrainingLossService:
     def get_losses_for_session(self, session_id: str) -> List[TrainingLoss]:
         return self.training_loss_repo.get_by_session_id(session_id)
 
-    def get_losses_for_corpus_entry(self, corpus_entry_id: str) -> List[TrainingLoss]:
-        return self.training_loss_repo.get_by_corpus_entry_id(corpus_entry_id)
+    def get_losses_for_corpus_entry(
+        self, corpus_entry_id: str, session_id: str
+    ) -> TrainingLoss:
+        return self.training_loss_repo.get_by_corpus_entry_id_and_session_id(
+            corpus_entry_id, session_id
+        )
 
     def get_loss_distribution(self, session_id: str) -> List[LossDistributionItem]:
         ranges = [
