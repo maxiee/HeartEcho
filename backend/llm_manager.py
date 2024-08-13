@@ -200,6 +200,7 @@ class LLMManager:
         session_name: str,
         entries: List[CorpusEntry],
         reverse_gradient: bool = False,
+        learning_rate: float = 1e-5,
     ) -> float:
         # 确保模型已加载到正确的设备上
         self._load_model_if_not_loaded(session_name)
@@ -219,7 +220,7 @@ class LLMManager:
         self.model.train()
 
         # 初始化优化器
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-5)
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=learning_rate)
 
         total_loss = 0.0  # 用于累积和计算平均损失
         accumulated_loss = 0.0  # 用于当前梯度累积周期的损失

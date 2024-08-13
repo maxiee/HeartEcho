@@ -88,7 +88,7 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                 children: [
                   SkillCard(
                     title: '熔炼新语料',
-                    description: '使用 1x batch 新语料训练模型',
+                    description: '使用新语料训练模型',
                     onActivate: () => _smeltNewCorpus(context),
                     isActive: isSmeltingInProgress,
                   ),

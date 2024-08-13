@@ -52,6 +52,9 @@ async def add_corpus_entry(
     corpus_id: str,
     entry: CorpusEntryCreate,
     service: CorpusManagementService = Depends(get_corpus_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
 ):
     try:
         if entry.entry_type == "knowledge":
@@ -61,7 +64,10 @@ async def add_corpus_entry(
                     detail="Content is required for knowledge type entries",
                 )
             created_entry = service.add_entry_to_corpus(
-                corpus_id=corpus_id, content=entry.content, entry_type=entry.entry_type
+                corpus_id=corpus_id,
+                content=entry.content,
+                entry_type=entry.entry_type,
+                session_id=training_session_service.get_current_session().id,
             )
         elif entry.entry_type == "chat":
             if not entry.messages:
@@ -73,6 +79,7 @@ async def add_corpus_entry(
                 corpus_id=corpus_id,
                 entry_type=entry.entry_type,
                 messages=entry.messages,
+                session_id=training_session_service.get_current_session().id,
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid entry type")

@@ -121,3 +121,16 @@ class TrainingLossService:
         )
 
         return sorted_corpus_entries
+
+    def set_default_high_loss(
+        self, corpus_entry_id: str, session_id: str, default_loss: float = 9.9
+    ):
+        training_loss = TrainingLoss(
+            id=IdGenerator.generate(),
+            corpus_entry_id=corpus_entry_id,
+            session_id=session_id,
+            timestamp=datetime.now(),
+            loss_value=default_loss,
+            loss_rank=TrainingLoss.calculate_loss_rank(default_loss),
+        )
+        self.training_loss_repo.save(training_loss)

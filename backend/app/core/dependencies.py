@@ -23,7 +23,11 @@ from services.training_session_service import TrainingSessionService
 @lru_cache()
 def get_corpus_service() -> CorpusManagementService:
     corpus_repo = MongoDBCorpusRepository()
-    return CorpusManagementService(corpus_repo, get_corpus_entry_repository())
+    return CorpusManagementService(
+        corpus_repo=corpus_repo,
+        corpus_entry_repo=get_corpus_entry_repository(),
+        training_loss_service=get_training_loss_service(),
+    )
 
 
 @lru_cache()

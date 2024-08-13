@@ -31,6 +31,13 @@ class ModelTrainingService:
             raise ValueError(f"Unknown entry type: {entry.entry_type}")
 
     def sample_new_entries(self, batch_size: int, session_id: str) -> List[CorpusEntry]:
+        assert (
+            self.training_session_service.get_current_session()
+        ), "No active training session"
+        self.llm_manager._load_model_if_not_loaded(
+            self.training_session_service.get_current_session().name
+        )
+
         # 前置检查：确保新语料数量大于 batch_size
         total_entries = self.corpus_entry_repo.count()
         new_entries_count = self.training_loss_service.get_new_corpus_entries_count(
@@ -53,9 +60,10 @@ class ModelTrainingService:
         self.llm_manager._load_model_if_not_loaded(
             self.training_session_service.get_current_session().name
         )
-        # Randomly sample batch_size entries
-        selected_entries = self.sample_new_entries(
-            batch_size, self.training_session_service.get_current_session().id
+
+        # Get entries with highest loss, which will include new entries (with default high loss)
+        selected_entries = self.training_loss_service.get_highest_loss_entries(
+            self.training_session_service.get_current_session().id, batch_size
         )
 
         total_tokens = sum(self._count_tokens(entry) for entry in selected_entries)
@@ -190,19 +198,19 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().id, batch_size
         )
 
-        # Filter entries with loss < 1
+        # Filter entries with loss < 0.5
         filtered_entries = [
             entry
             for entry in lowest_loss_entries
             if self.training_loss_service.get_losses_for_corpus_entry(
                 entry.id, self.training_session_service.get_current_session().id
             ).loss_value
-            < 1.0
+            < 0.5
         ]
 
         if not filtered_entries:
             return {
-                "message": "No entries with loss < 1 found for overfitting treatment",
+                "message": "No entries with loss < 0.5 found for overfitting treatment",
                 "entries_trained": 0,
             }
 
@@ -213,6 +221,7 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().name,
             filtered_entries,
             reverse_gradient=True,
+            learning_rate=1e-6,
         )
 
         self.training_session_service.update_tokens_trained(total_tokens)

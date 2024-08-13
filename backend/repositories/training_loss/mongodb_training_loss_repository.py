@@ -41,7 +41,7 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
             existing_loss.loss_value = training_loss.loss_value
             existing_loss.save()
             print(
-                f"Training loss updated for corpus_entry_id: {training_loss.corpus_entry_id}, session_id: {training_loss.session_id}"
+                f"Training loss updated for corpus_entry_id: {training_loss.corpus_entry_id}, session_id: {training_loss.session_id}, loss_value: {training_loss.loss_value}"
             )
             return self._to_domain(existing_loss)
         else:

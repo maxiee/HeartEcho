@@ -3,15 +3,20 @@ from typing import Dict, List, Optional
 from domain.corpus import Corpus, CorpusEntry
 from repositories.corpus.corpus_repository import CorpusRepository
 from repositories.corpus_entry.corpus_entry_repository import CorpusEntryRepository
+from services.training_loss_service import TrainingLossService
 from utils.id_generator import IdGenerator
 
 
 class CorpusManagementService:
     def __init__(
-        self, corpus_repo: CorpusRepository, corpus_entry_repo: CorpusEntryRepository
+        self,
+        corpus_repo: CorpusRepository,
+        corpus_entry_repo: CorpusEntryRepository,
+        training_loss_service: TrainingLossService,
     ):
         self.corpus_repo = corpus_repo
         self.corpus_entry_repo = corpus_entry_repo
+        self.training_loss_service = training_loss_service
 
     def create_corpus(self, name: str, description: str) -> Corpus:
         """创建一个新的语料库。"""
@@ -36,6 +41,7 @@ class CorpusManagementService:
         entry_type: str,
         content: Optional[str] = None,
         messages: Optional[List[Dict[str, str]]] = None,
+        session_id=None,
     ) -> CorpusEntry:
         """Add a new entry to the corpus."""
         corpus = self.corpus_repo.get_by_id(corpus_id)
@@ -57,7 +63,14 @@ class CorpusManagementService:
             created_at=datetime.now(),
             metadata={},
         )
-        return self.corpus_entry_repo.save(entry)
+
+        saved_entry = self.corpus_entry_repo.save(entry)
+
+        # Set default high loss for new entries
+        if session_id:
+            self.training_loss_service.set_default_high_loss(saved_entry.id, session_id)
+
+        return saved_entry
 
     def remove_entry_from_corpus(self, entry_id: str) -> bool:
         """从语料库中删除一个条目。"""
