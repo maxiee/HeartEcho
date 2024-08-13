@@ -61,8 +61,27 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
   }
 
   Future<void> _saveCurrentSession() async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text("Saving session..."),
+            ],
+          ),
+        );
+      },
+    );
+
     try {
       await API.saveCurrentSession();
+      // Close loading dialog
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Session saved successfully')),
       );
@@ -74,6 +93,8 @@ class _GlobalTitlebarState extends State<GlobalTitlebar> {
         _isSaveEnabled = false;
       });
     } catch (e) {
+      // Close loading dialog
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error saving session: $e')),
       );
