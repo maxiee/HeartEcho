@@ -98,6 +98,12 @@ class _TrainPageContentState extends State<_TrainPageContent> {
                     onActivate: () => _smeltNewOld(context),
                     isActive: isSmeltingInProgress,
                   ),
+                  SkillCard(
+                    title: '治疗过拟合',
+                    description: '增加低误差语料损失，缓解过拟合',
+                    onActivate: () => _treatOverfitting(context),
+                    isActive: isSmeltingInProgress,
+                  ),
                 ],
               )
             ],
@@ -176,6 +182,45 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error smelting new old: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        isSmeltingInProgress = false;
+      });
+    }
+  }
+
+  Future<void> _treatOverfitting(BuildContext context) async {
+    final globalSessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context, listen: false);
+
+    setState(() {
+      isSmeltingInProgress = true;
+    });
+
+    try {
+      final result =
+          await API.treatOverfitting(globalSessionProvider.currentSession!.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Overfitting treatment completed. Loss: ${result['loss']}')),
+        );
+      }
+      // Refresh the error distribution and new corpus entries count
+      await newCorpusEntriesProvider
+          .fetchNewCorpusEntriesCount(globalSessionProvider.currentSession!);
+      setState(() {
+        _refreshTrigger++; // Trigger a refresh of the ErrorDistributionChart
+      });
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error treating overfitting: $e')),
         );
       }
     } finally {

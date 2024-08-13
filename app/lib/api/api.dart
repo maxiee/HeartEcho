@@ -291,6 +291,20 @@ class ApiClient {
       throw Exception('Failed to train single entry: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> treatOverfitting(String sessionName) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/treat_overfitting'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session': sessionName}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to treat overfitting: ${response.body}');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

@@ -101,6 +101,21 @@ async def train_single_entry(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/treat_overfitting")
+async def treat_overfitting(
+    model_training_service: ModelTrainingService = Depends(get_model_training_service),
+    training_session_service: TrainingSessionService = Depends(
+        get_training_session_service
+    ),
+):
+    session = training_session_service.get_current_session()
+    if not session:
+        raise HTTPException(status_code=404, detail="Training session not found")
+
+    result = model_training_service.treat_overfitting()
+    return result
+
+
 @app.post("/create_training_session")
 async def create_training_session():
     try:

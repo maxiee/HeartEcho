@@ -195,7 +195,12 @@ class LLMManager:
         else:
             raise ValueError(f"Unknown entry type: {entry.entry_type}")
 
-    def train_on_entries(self, session_name: str, entries: List[CorpusEntry]) -> float:
+    def train_on_entries(
+        self,
+        session_name: str,
+        entries: List[CorpusEntry],
+        reverse_gradient: bool = False,
+    ) -> float:
         # 确保模型已加载到正确的设备上
         self._load_model_if_not_loaded(session_name)
 
@@ -264,7 +269,12 @@ class LLMManager:
                 )
 
                 # 反向传播
-                weighted_loss.backward()
+                if reverse_gradient:
+                    print("3.1 反向传播中..., 反向传播的梯度将被反转。")
+                    (-weighted_loss).backward()
+                else:
+                    print("3.1 反向传播中...")
+                    weighted_loss.backward()
                 print("4. Backward pass completed.")
 
                 accumulated_loss += loss.item() * gradient_weight

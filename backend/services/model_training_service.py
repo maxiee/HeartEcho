@@ -176,3 +176,45 @@ class ModelTrainingService:
             "entry_id": entry_id,
             "tokens_trained": tokens_count,
         }
+
+    def treat_overfitting(self, batch_size: int = 16) -> dict:
+        assert (
+            self.training_session_service.get_current_session()
+        ), "No active training session"
+        self.llm_manager._load_model_if_not_loaded(
+            self.training_session_service.get_current_session().name
+        )
+
+        # 获取误差最小的entries
+        lowest_loss_entries = self.training_loss_service.get_lowest_loss_entries(
+            self.training_session_service.get_current_session().id, batch_size
+        )
+
+        total_tokens = sum(self._count_tokens(entry) for entry in lowest_loss_entries)
+
+        # 训练模型，但是反向梯度
+        loss = self.llm_manager.train_on_entries(
+            self.training_session_service.get_current_session().name,
+            lowest_loss_entries,
+            reverse_gradient=True,
+        )
+
+        self.training_session_service.update_tokens_trained(total_tokens)
+
+        # 重新计算和更新个别损失
+        total_loss = 0
+        for entry in lowest_loss_entries:
+            entry_loss = self.llm_manager.calculate_entry_loss(entry)
+            self.training_loss_service.update_loss(
+                entry.id,
+                entry_loss,
+                self.training_session_service.get_current_session(),
+            )
+            total_loss += entry_loss
+
+        actual_average_loss = total_loss / len(lowest_loss_entries)
+        return {
+            "message": "Overfitting treatment completed",
+            "loss": actual_average_loss,
+            "entries_treated": len(lowest_loss_entries),
+        }
