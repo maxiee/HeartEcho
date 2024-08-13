@@ -18,6 +18,10 @@ from app.core.config import settings
 from services.model_training_service import ModelTrainingService
 from services.training_session_service import TrainingSessionService
 
+# 如果环境变量中设置了 MODEL_SAVE_PATH,则使用环境变量的值
+if "MODEL_SAVE_PATH" in os.environ:
+    settings.MODEL_SAVE_PATH = os.environ["MODEL_SAVE_PATH"]
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI()

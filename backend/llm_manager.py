@@ -358,4 +358,4 @@ class LLMManager:
         return True
 
     def _get_model_dir_from_session_name(self, session_name: str):
-        return os.path.join("./trained", session_name)
+        return os.path.join(settings.MODEL_SAVE_PATH, session_name)

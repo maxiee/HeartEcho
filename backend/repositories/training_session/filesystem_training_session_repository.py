@@ -1,5 +1,6 @@
 import os
 import json
+from app.core.config import settings
 from typing import List, Optional
 from datetime import datetime
 from domain.training_session import TrainingSession
@@ -9,8 +10,8 @@ from repositories.training_session.training_session_repository import (
 
 
 class FileSystemTrainingSessionRepository(TrainingSessionRepository):
-    def __init__(self, base_path: str = "./trained"):
-        self.base_path = base_path
+    def __init__(self):
+        self.base_path = settings.MODEL_SAVE_PATH
         if not os.path.exists(self.base_path):
             os.makedirs(self.base_path)
 
