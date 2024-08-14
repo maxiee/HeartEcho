@@ -17,6 +17,7 @@ class CorpusEntry:
     messages: Optional[List[Dict[str, str]]] = None  # For 'chat' type
     metadata: dict = field(default_factory=dict)
     sha256: str = field(init=False)
+    is_reverse_gradient: bool = False
 
     def __post_init__(self):
         if self.entry_type == "knowledge" and self.content is None:
@@ -29,6 +30,8 @@ class CorpusEntry:
             raise ValueError("Messages should not be provided for knowledge entry type")
         if self.entry_type == "chat" and self.content is not None:
             raise ValueError("Content should not be provided for chat entry type")
+        if self.is_reverse_gradient and self.entry_type != "chat":
+            raise ValueError("Only chat entries can be marked as reverse gradient")
         self.sha256 = self.calculate_sha256()
 
     def calculate_sha256(self) -> str:
@@ -42,7 +45,17 @@ class CorpusEntry:
         return hashlib.sha256(data.encode()).hexdigest()
 
     def __repr__(self):
-        return f"CorpusEntry(id={self.id}, type={self.entry_type}, created_at={self.created_at}, sha256={self.sha256})"
+        ret = ""
+        ret += f"CorpusEntry(\n\tid={self.id},"
+        ret += f"\n\tcorpus={self.corpus},"
+        ret += f"\n\tentry_type={self.entry_type},"
+        ret += f"\n\tcreated_at={self.created_at},"
+        ret += f"\n\tcontent={self.content},"
+        ret += f"\n\tmessages={self.messages},"
+        ret += f"\n\tmetadata={self.metadata},"
+        ret += f"\n\tsha256={self.sha256},"
+        ret += f"\n\tis_reverse_gradient={self.is_reverse_gradient}\n)"
+        return ret
 
 
 @dataclass

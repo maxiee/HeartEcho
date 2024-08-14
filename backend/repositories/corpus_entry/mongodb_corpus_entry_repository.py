@@ -7,6 +7,7 @@ from mongoengine import (
     DateTimeField,
     DictField,
     ListField,
+    BooleanField,
 )
 from app.core.db import DB
 from domain.corpus import CorpusEntry
@@ -26,6 +27,7 @@ class MongoCorpusEntry(Document):
     content = StringField()  # For 'knowledge' type
     messages = ListField(DictField(), default=list)  # For 'chat' type
     sha256 = StringField(unique=True)
+    is_reverse_gradient = BooleanField(default=False)
 
     meta = {"collection": "corpus_entries"}
 
@@ -115,6 +117,7 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
             entry_type=mongo_entry.entry_type,
             created_at=mongo_entry.created_at,
             metadata=mongo_entry.metadata,
+            is_reverse_gradient=mongo_entry.is_reverse_gradient,
         )
 
     def _to_mongo(self, entry: CorpusEntry) -> MongoCorpusEntry:
@@ -127,4 +130,5 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
             created_at=entry.created_at,
             metadata=entry.metadata,
             sha256=entry.sha256,
+            is_reverse_gradient=entry.is_reverse_gradient,
         )

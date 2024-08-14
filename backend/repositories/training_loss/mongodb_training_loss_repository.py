@@ -5,6 +5,7 @@ from mongoengine import (
     StringField,
     DateTimeField,
     FloatField,
+    BooleanField,
     NotUniqueError,
     Q,
 )
@@ -20,6 +21,8 @@ class MongoTrainingLoss(Document):
     timestamp = DateTimeField(required=True)
     loss_value = FloatField(required=True)
     loss_rank = StringField(required=True, index=True)
+    is_reverse_gradient = BooleanField(default=False)
+
     meta = {"collection": "training_losses"}
 
 
@@ -112,4 +115,5 @@ class MongoDBTrainingLossRepository(TrainingLossRepository):
             session_id=mongo_loss.session_id,
             timestamp=mongo_loss.timestamp,
             loss_value=mongo_loss.loss_value,
+            is_reverse_gradient=mongo_loss.is_reverse_gradient,
         )

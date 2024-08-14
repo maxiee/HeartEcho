@@ -6,8 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from transformers.trainer_pt_utils import LabelSmoother
 from domain.corpus import CorpusEntry
+from domain.training_loss import TrainingLoss
 from domain.training_session import TrainingSession
-from models.training_loss import TrainingLoss
 from app.core.config import settings
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
@@ -201,7 +201,7 @@ class LLMManager:
         entries: List[CorpusEntry],
         reverse_gradient: bool = False,
         learning_rate: float = 1e-5,
-    ) -> float:
+    ):
         # 确保模型已加载到正确的设备上
         self._load_model_if_not_loaded(session_name)
 
@@ -212,7 +212,7 @@ class LLMManager:
         train_dataloader = DataLoader(
             train_dataset,
             batch_size=1,
-            shuffle=True,  # 随机打乱数据
+            shuffle=False,  # 随机打乱数据
             collate_fn=collate_fn,  # 使用自定义的 collate 函数
         )
 
@@ -222,8 +222,6 @@ class LLMManager:
         # 初始化优化器
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=learning_rate)
 
-        total_loss = 0.0  # 用于累积和计算平均损失
-        accumulated_loss = 0.0  # 用于当前梯度累积周期的损失
         total_tokens = sum(self._count_tokens(entry) for entry in entries)
         max_token_length = 0
         max_token_entry = None
@@ -234,11 +232,29 @@ class LLMManager:
 
         # 遍历数据集
         for step, batch in enumerate(train_dataloader):
+            entry = entries[step]  # 获取对应的 CorpusEntry
+
             # 计算当前批次的 token 长度
             token_length = batch["input_ids"].size(1)  # 获取序列长度
             print(
                 f"\n--- 正在学习第 {step + 1} 条数据 (Token 长度: {token_length}) ---"
             )
+            print("entry_id: ", entry.id)
+
+            if entry.entry_type == "chat":
+                # 验证 batch 中的 tokens 与 entry 中的内容一致
+                entry_tokens = self.tokenizer.encode(
+                    self.tokenizer.apply_chat_template(
+                        entry.messages,
+                        tokenize=False,
+                        add_generation_prompt=False,
+                        chat_template=TEMPLATE,
+                    )
+                )
+                assert torch.equal(
+                    batch["input_ids"][0], torch.tensor(entry_tokens)
+                ), "DataLoader 输出与 entry 内容不匹配"
+
             # 每批只有1个条目，打印出这个条目的内容的前100个 token的字符串表示
             print(
                 f"内容: {self.tokenizer.decode(batch['input_ids'][0, :100], skip_special_tokens=True)}"
@@ -270,16 +286,14 @@ class LLMManager:
                 )
 
                 # 反向传播
-                if reverse_gradient:
+                should_reverse = reverse_gradient ^ entry.is_reverse_gradient  # XOR操作
+                if should_reverse:
                     print("3.1 反向传播中..., 反向传播的梯度将被反转。")
                     (-weighted_loss).backward()
                 else:
                     print("3.1 反向传播中...")
                     weighted_loss.backward()
                 print("4. Backward pass completed.")
-
-                accumulated_loss += loss.item() * gradient_weight
-                total_loss += loss.item() * gradient_weight
 
                 # 每16步或在最后一步执行优化器步骤
                 if (step + 1) % 16 == 0 or (step + 1) == len(train_dataloader):
@@ -288,15 +302,9 @@ class LLMManager:
                     # 清零梯度
                     optimizer.zero_grad()
 
-                    print(
-                        f"5. 我已经学习了16条数据（或所有数据），现在我要整理一下我学到的东西。"
-                    )
-                    print(
-                        f"   在这16条数据中，我的平均理解误差是: {accumulated_loss:.4f}"
-                    )
-                    accumulated_loss = 0.0
+                    print(f"5. 我已经完成本轮学习")
                 else:
-                    print("5. 我还没学够16条数据，我会继续学习下一条。")
+                    print("5. 本轮还在学习中，我会继续学习下一条。")
             except RuntimeError as e:
                 if "out of memory" in str(e):
                     print(
@@ -309,13 +317,9 @@ class LLMManager:
                     raise e
 
         # 计算平均损失
-        average_loss = total_loss
-        print(f"\n训练结束！在整个学习过程中，我的平均理解误差是: {average_loss:.4f}")
-        print("这个数字越小，说明我学得越好！")
         print(
             f"最长的语料是第 {max_token_entry} 条，长度为 {max_token_length} 个 token。"
         )
-        return average_loss
 
     def calculate_entry_loss(self, entry: CorpusEntry) -> float:
         self.model.eval()  # Set the model to evaluation mode
@@ -361,50 +365,9 @@ class LLMManager:
                 labels[:, -1] = -100  # Ignore loss for the last token if truncated
 
             outputs = self.model(**inputs, labels=labels)
-            loss = outputs.loss.item()
+            actual_loss = outputs.loss.item()
 
-        return loss
-
-    def get_error_distribution(self):
-        current_session = self.training_session_service.get_current_session()
-        if not current_session:
-            raise ValueError("No active training session")
-
-        # Get distribution from database
-        db_distribution = TrainingError.get_distribution(current_session.name)
-
-        # Convert db_distribution to a dictionary for easier manipulation
-        distribution_dict = {
-            str(item["_id"]): item["count"] for item in db_distribution
-        }
-
-        # Get cached errors for this session
-        cached_errors = self.cached_errors.get(current_session.name, {})
-
-        # Process cached errors
-        for entry_id, error in cached_errors.items():
-            error_range = ErrorRange.get_range_for_error(error)
-            if error_range:
-                range_id = str(error_range.id)
-                if range_id in distribution_dict:
-                    # If this range already exists in db_distribution, increment the count
-                    distribution_dict[range_id] += 1
-                else:
-                    # If this is a new range, add it to the distribution
-                    distribution_dict[range_id] = 1
-
-        # Convert the updated distribution back to the original format
-        updated_distribution = [
-            {"_id": range_id, "count": count}
-            for range_id, count in distribution_dict.items()
-        ]
-
-        # Sort the distribution by error range
-        updated_distribution.sort(
-            key=lambda x: ErrorRange.objects(id=x["_id"]).first().lower_bound
-        )
-
-        return updated_distribution
+        return TrainingLoss.calculate_loss_value(actual_loss, entry.is_reverse_gradient)
 
     def save_model(self, session: TrainingSession):
         if not self.model:

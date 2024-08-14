@@ -18,10 +18,10 @@ class CorpusManagementService:
         self.corpus_entry_repo = corpus_entry_repo
         self.training_loss_service = training_loss_service
 
-    def create_corpus(self, name: str, description: str) -> Corpus:
+    def create_corpus(self, name: str, description: str, id=None) -> Corpus:
         """创建一个新的语料库。"""
         corpus = Corpus(
-            id=IdGenerator.generate(),
+            id=IdGenerator.generate() if id is None else id,
             name=name,
             description=description,
             created_at=datetime.now(),
@@ -42,6 +42,7 @@ class CorpusManagementService:
         content: Optional[str] = None,
         messages: Optional[List[Dict[str, str]]] = None,
         session_id=None,
+        is_reverse_gradient: bool = False,
     ) -> CorpusEntry:
         """Add a new entry to the corpus."""
         corpus = self.corpus_repo.get_by_id(corpus_id)
@@ -62,13 +63,16 @@ class CorpusManagementService:
             entry_type=entry_type,
             created_at=datetime.now(),
             metadata={},
+            is_reverse_gradient=is_reverse_gradient,
         )
 
         saved_entry = self.corpus_entry_repo.save(entry)
 
         # Set default high loss for new entries
         if session_id:
-            self.training_loss_service.set_default_high_loss(saved_entry.id, session_id)
+            self.training_loss_service.set_default_high_loss(
+                saved_entry.id, session_id, is_reverse_gradient
+            )
 
         return saved_entry
 

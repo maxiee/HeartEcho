@@ -23,6 +23,7 @@ class TrainingLossService:
         corpus_entry_id: str,
         loss: float,
         session: TrainingSession,
+        is_reverse_gradient: bool = False,
     ):
         training_loss = TrainingLoss(
             id=IdGenerator.generate(),
@@ -31,6 +32,7 @@ class TrainingLossService:
             timestamp=datetime.now(),
             loss_value=loss,
             loss_rank=TrainingLoss.calculate_loss_rank(loss),
+            is_reverse_gradient=is_reverse_gradient,
         )
         self.training_loss_repo.save(training_loss)
 
@@ -123,7 +125,11 @@ class TrainingLossService:
         return sorted_corpus_entries
 
     def set_default_high_loss(
-        self, corpus_entry_id: str, session_id: str, default_loss: float = 9.9
+        self,
+        corpus_entry_id: str,
+        session_id: str,
+        is_reverse_gradient: bool = False,
+        default_loss: float = 9.9,
     ):
         training_loss = TrainingLoss(
             id=IdGenerator.generate(),
@@ -132,5 +138,6 @@ class TrainingLossService:
             timestamp=datetime.now(),
             loss_value=default_loss,
             loss_rank=TrainingLoss.calculate_loss_rank(default_loss),
+            is_reverse_gradient=is_reverse_gradient,
         )
         self.training_loss_repo.save(training_loss)

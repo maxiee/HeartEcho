@@ -1,28 +1,16 @@
+import 'package:app/models/corpus.dart';
+
 class ChatSession {
-  final List<ChatMessage> messages;
+  final List<Message> messages;
   String? path;
 
   ChatSession(this.messages, {this.path});
 
-  addMessage(ChatMessage message) {
+  addMessage(Message message) {
     messages.insert(0, message);
   }
 
-  List<Map<String, String>> toHistory() {
-    return messages.map((e) => e.toMap()).toList().reversed.toList();
-  }
-}
-
-class ChatMessage {
-  String role;
-  String content;
-
-  ChatMessage({required this.role, required this.content});
-
-  Map<String, String> toMap() {
-    return {
-      'role': role,
-      'content': content,
-    };
+  List<Map<String, dynamic>> toHistory() {
+    return messages.map((e) => e.toJson()).toList().reversed.toList();
   }
 }

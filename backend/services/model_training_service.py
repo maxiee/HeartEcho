@@ -66,10 +66,14 @@ class ModelTrainingService:
             self.training_session_service.get_current_session().id, batch_size
         )
 
+        # print("get_highest_loss_entries")
+        # for entry in selected_entries:
+        #     print(entry)
+
         total_tokens = sum(self._count_tokens(entry) for entry in selected_entries)
 
         # Train the model
-        loss = self.llm_manager.train_on_entries(
+        self.llm_manager.train_on_entries(
             self.training_session_service.get_current_session().name, selected_entries
         )
 
@@ -123,7 +127,7 @@ class ModelTrainingService:
         selected_entries += lowest_loss_entries
 
         # Train the model
-        loss = self.llm_manager.train_on_entries(
+        self.llm_manager.train_on_entries(
             self.training_session_service.get_current_session().name, selected_entries
         )
 
@@ -161,7 +165,7 @@ class ModelTrainingService:
             raise ValueError(f"Corpus entry with id {entry_id} not found")
 
         # 训练模型
-        loss = self.llm_manager.train_on_entries(
+        self.llm_manager.train_on_entries(
             self.training_session_service.get_current_session().name, [entry]
         )
 
@@ -217,7 +221,7 @@ class ModelTrainingService:
         total_tokens = sum(self._count_tokens(entry) for entry in filtered_entries)
 
         # 训练模型，但是反向梯度
-        loss = self.llm_manager.train_on_entries(
+        self.llm_manager.train_on_entries(
             self.training_session_service.get_current_session().name,
             filtered_entries,
             reverse_gradient=True,

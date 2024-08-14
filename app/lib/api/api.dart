@@ -90,19 +90,10 @@ class ApiClient {
       Map<String, dynamic> data) async {
     final String corpusId =
         data['corpus_id']; // Assuming 'corpus_name' is actually the corpus ID
-    final paylaod = json.encode({
-      'entry_type': data['entry_type'],
-      'content': data['content'],
-      'messages': data['messages'],
-    });
     final response = await http.post(
       Uri.parse('$baseUrl/corpus/entry?corpus_id=$corpusId'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'entry_type': data['entry_type'],
-        'content': data['content'],
-        'messages': data['messages'],
-      }),
+      body: json.encode(data),
     );
 
     if (response.statusCode == 200) {

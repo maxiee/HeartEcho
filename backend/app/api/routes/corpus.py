@@ -57,11 +57,29 @@ async def add_corpus_entry(
     ),
 ):
     try:
+        # 检查是否是反向语料
+        if entry.is_reverse_gradient:
+            corpus_id = "reversed_corpus"
+            # 检查反向语料库是否存在，如果不存在则创建
+            try:
+                service.create_corpus(
+                    id=corpus_id,
+                    name="Reversed Corpus",
+                    description="Automatically created corpus for reverse gradient entries",
+                )
+            except Exception:
+                print("Reversed corpus already exists")
+
         if entry.entry_type == "knowledge":
             if not entry.content:
                 raise HTTPException(
                     status_code=400,
                     detail="Content is required for knowledge type entries",
+                )
+            if entry.is_reverse_gradient:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Knowledge entries cannot be reverse gradient",
                 )
             created_entry = service.add_entry_to_corpus(
                 corpus_id=corpus_id,
@@ -80,12 +98,14 @@ async def add_corpus_entry(
                 entry_type=entry.entry_type,
                 messages=entry.messages,
                 session_id=training_session_service.get_current_session().id,
+                is_reverse_gradient=entry.is_reverse_gradient,
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid entry type")
 
         return CorpusEntryResponse(**created_entry.__dict__)
     except ValueError as e:
+        print(e)
         raise HTTPException(status_code=404, detail=str(e))
 
 
@@ -108,6 +128,7 @@ async def get_corpus_entries(
             messages=entry.messages,
             metadata=entry.metadata,
             sha256=entry.sha256,
+            is_reverse_gradient=entry.is_reverse_gradient,
         )
         for entry in entries
     ]

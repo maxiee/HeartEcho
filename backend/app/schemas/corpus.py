@@ -36,6 +36,9 @@ class CorpusEntryCreate(BaseModel):
     messages: Optional[List[Dict[str, str]]] = Field(
         None, description="Messages for chat type entries"
     )
+    is_reverse_gradient: bool = Field(
+        False, description="Whether this entry should be trained with reverse gradient"
+    )
 
     class Config:
         schema_extra = {
@@ -55,6 +58,7 @@ class CorpusEntryResponse(BaseModel):
     messages: Optional[List[Dict[str, str]]] = None
     metadata: dict = {}
     sha256: str
+    is_reverse_gradient: bool
 
     class Config:
         orm_mode = True
