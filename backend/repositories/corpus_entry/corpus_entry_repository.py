@@ -35,3 +35,7 @@ class CorpusEntryRepository(ABC):
     @abstractmethod
     def count(self) -> int:
         pass
+
+    @abstractmethod
+    def sample_random_entries(self, batch_size: int) -> List[CorpusEntry]:
+        pass

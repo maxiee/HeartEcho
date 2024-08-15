@@ -247,3 +247,47 @@ class ModelTrainingService:
             "loss": actual_average_loss,
             "entries_treated": len(filtered_entries),
         }
+
+    def random_sample_training(self, batch_size: int = 16) -> dict:
+        assert (
+            self.training_session_service.get_current_session()
+        ), "No active training session"
+        self.llm_manager._load_model_if_not_loaded(
+            self.training_session_service.get_current_session().name
+        )
+
+        # Randomly sample entries from the corpus
+        sampled_entries = self.corpus_entry_repo.sample_random_entries(batch_size)
+
+        if not sampled_entries:
+            return {
+                "message": "No entries available for training",
+                "entries_trained": 0,
+            }
+
+        total_tokens = sum(self._count_tokens(entry) for entry in sampled_entries)
+
+        # Train the model on the sampled entries
+        self.llm_manager.train_on_entries(
+            self.training_session_service.get_current_session().name, sampled_entries
+        )
+
+        self.training_session_service.update_tokens_trained(total_tokens)
+
+        # Calculate and update individual losses
+        total_loss = 0
+        for entry in sampled_entries:
+            entry_loss = self.llm_manager.calculate_entry_loss(entry)
+            self.training_loss_service.update_loss(
+                entry.id,
+                entry_loss,
+                self.training_session_service.get_current_session(),
+            )
+            total_loss += entry_loss
+
+        average_loss = total_loss / len(sampled_entries)
+        return {
+            "message": "Random sample training completed",
+            "loss": average_loss,
+            "entries_trained": len(sampled_entries),
+        }

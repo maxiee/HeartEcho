@@ -296,6 +296,21 @@ class ApiClient {
       throw Exception('Failed to treat overfitting: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> randomSampleTraining(String sessionName) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/random_sample_training'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session': sessionName}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(
+          'Failed to perform random sample training: ${response.body}');
+    }
+  }
 }
 
 // ignore: non_constant_identifier_names

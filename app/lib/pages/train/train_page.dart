@@ -87,6 +87,12 @@ class _TrainPageContentState extends State<_TrainPageContent> {
               Wrap(
                 children: [
                   SkillCard(
+                    title: '随机训练',
+                    description: '随机采样语料进行训练',
+                    onActivate: () => _randomTraining(context),
+                    isActive: isSmeltingInProgress,
+                  ),
+                  SkillCard(
                     title: '熔炼新语料',
                     description: '使用新语料训练模型',
                     onActivate: () => _smeltNewCorpus(context),
@@ -221,6 +227,45 @@ class _TrainPageContentState extends State<_TrainPageContent> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error treating overfitting: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        isSmeltingInProgress = false;
+      });
+    }
+  }
+
+  Future<void> _randomTraining(BuildContext context) async {
+    final globalSessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final newCorpusEntriesProvider =
+        Provider.of<NewCorpusEntriesProvider>(context, listen: false);
+
+    setState(() {
+      isSmeltingInProgress = true;
+    });
+
+    try {
+      final result = await API
+          .randomSampleTraining(globalSessionProvider.currentSession!.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Random sample training completed. Loss: ${result['loss']}')),
+        );
+      }
+      // Refresh the error distribution and new corpus entries count
+      await newCorpusEntriesProvider
+          .fetchNewCorpusEntriesCount(globalSessionProvider.currentSession!);
+      setState(() {
+        _refreshTrigger++; // Trigger a refresh of the ErrorDistributionChart
+      });
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error in random sample training: $e')),
         );
       }
     } finally {

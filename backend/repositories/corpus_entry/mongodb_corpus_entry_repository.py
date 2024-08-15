@@ -45,6 +45,12 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         mongo_entries = MongoCorpusEntry.objects(id__in=entry_ids)
         return [self._to_domain(me) for me in mongo_entries]
 
+    def sample_random_entries(self, batch_size: int) -> List[CorpusEntry]:
+        mongo_entries = MongoCorpusEntry.objects.aggregate(
+            [{"$sample": {"size": batch_size}}]
+        )
+        return [self._to_domain(me) for me in mongo_entries]
+
     def save(self, entry: CorpusEntry) -> CorpusEntry:
         mongo_entry = self._to_mongo(entry)
         mongo_entry.save()
