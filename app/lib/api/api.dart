@@ -7,9 +7,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiClient {
-  final String baseUrl;
+  String baseUrl = 'http://localhost:1127';
 
-  ApiClient({this.baseUrl = 'http://localhost:1127'});
+  ApiClient();
 
   Future<String> chat(List<Map<String, dynamic>> history) async {
     final response = await http.post(
@@ -54,7 +54,7 @@ class ApiClient {
   }
 
   Future<List<dynamic>> fetchCorpora() async {
-    final response = await http.get(Uri.parse('http://localhost:1127/corpus/'));
+    final response = await http.get(Uri.parse('$baseUrl/corpus/'));
     if (response.statusCode == 200) {
       final List<dynamic> data =
           json.decode(utf8.decode(response.bodyBytes))['items'];

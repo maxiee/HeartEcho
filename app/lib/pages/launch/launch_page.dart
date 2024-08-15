@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/api/api.dart';
 import 'package:app/providers/global_training_session_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LaunchPage extends StatefulWidget {
   final VoidCallback onSessionStart;
@@ -17,10 +18,30 @@ class _LaunchPageState extends State<LaunchPage> {
   TrainingSession? selectedSession;
   List<TrainingSession> savedSessions = [];
   bool isLoading = false;
+  final TextEditingController _serverAddressController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _loadSavedSessions();
+    _loadServerAddress();
+  }
+
+  Future<void> _loadServerAddress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedAddress =
+        prefs.getString('server_address') ?? 'http://127.0.0.1:1127';
+    setState(() {
+      _serverAddressController.text = savedAddress;
+    });
+    API.baseUrl = savedAddress;
+  }
+
+  Future<void> _saveServerAddress(String address) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('server_address', address);
+    API.baseUrl = address;
     _loadSavedSessions();
   }
 
@@ -142,7 +163,17 @@ class _LaunchPageState extends State<LaunchPage> {
                     'Your Personal AI Companion',
                     style: Theme.of(context).textTheme.displaySmall,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _serverAddressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Server Address',
+                      hintText: 'http://127.0.0.1:1127',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => _saveServerAddress(value),
+                  ),
+                  const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: isLoading ? null : _startNewGame,
                     style: ElevatedButton.styleFrom(
