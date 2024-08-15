@@ -43,15 +43,20 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          // IconButton(
+          //   icon: const Icon(Icons.edit),
+          //   tooltip: "切换到学习模式",
+          //   onPressed: () {},
+          // ),
+          // IconButton(
+          //   icon: const Icon(Icons.save),
+          //   tooltip: "保存对话",
+          //   onPressed: () {},
+          // ),
           IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: "切换到学习模式",
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            tooltip: "保存对话",
-            onPressed: () {},
+            icon: const Icon(Icons.thumb_up),
+            tooltip: "标记为正向训练语料",
+            onPressed: _createPositiveGradientEntry,
           ),
           IconButton(
             icon: const Icon(Icons.thumb_down),
@@ -123,6 +128,37 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating reverse gradient entry: $e')),
+      );
+    }
+  }
+
+  Future<void> _createPositiveGradientEntry() async {
+    final globalSessionProvider =
+        Provider.of<GlobalTrainingSessionProvider>(context, listen: false);
+    final currentSession = globalSessionProvider.currentSession;
+
+    if (currentSession == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No active training session')),
+      );
+      return;
+    }
+
+    try {
+      final response = await API.createCorpusEntry({
+        'corpus_id': 'positive_corpus',
+        'entry_type': 'chat',
+        'messages': chatSession.toHistory(),
+        'is_reverse_gradient': false,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Positive gradient entry created successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating positive gradient entry: $e')),
       );
     }
   }

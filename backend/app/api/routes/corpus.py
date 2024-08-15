@@ -69,6 +69,17 @@ async def add_corpus_entry(
                 )
             except Exception:
                 print("Reversed corpus already exists")
+        # 检查是否是正向语料
+        elif corpus_id == "positive_corpus":
+            # 检查正向语料库是否存在，如果不存在则创建
+            try:
+                service.create_corpus(
+                    id=corpus_id,
+                    name="Positive Corpus",
+                    description="Automatically created corpus for positive gradient entries",
+                )
+            except Exception:
+                print("Positive corpus already exists")
 
         if entry.entry_type == "knowledge":
             if not entry.content:
