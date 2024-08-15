@@ -49,7 +49,13 @@ class MongoDBCorpusEntryRepository(CorpusEntryRepository):
         mongo_entries = MongoCorpusEntry.objects.aggregate(
             [{"$sample": {"size": batch_size}}]
         )
-        return [self._to_domain(me) for me in mongo_entries]
+        # 本地调整：将 _id 改为 id
+        adjusted_entries = []
+        for entry in mongo_entries:
+            entry["id"] = str(entry.pop("_id"))  # 将 _id 转换为字符串并重命名为 id
+            adjusted_entries.append(entry)
+
+        return [self._to_domain(MongoCorpusEntry(**me)) for me in adjusted_entries]
 
     def save(self, entry: CorpusEntry) -> CorpusEntry:
         mongo_entry = self._to_mongo(entry)
