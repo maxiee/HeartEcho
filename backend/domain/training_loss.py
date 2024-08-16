@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-N = 5  # 定义常量N，可以根据需要调整
+N = 10  # 定义常量N，可以根据需要调整
 
 
 @dataclass
